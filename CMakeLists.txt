@@ -43,6 +43,19 @@ else()
   target_compile_options(valor PRIVATE -Wall -Wextra)
 endif()
 
+if(MINGW)
+  # Bundle the GCC runtime into the .exe so it runs on PCs without MinGW installed
+  target_link_options(valor PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+
+if(WIN32)
+  # Release builds open as a normal Windows app with no console window
+  set_target_properties(valor PROPERTIES WIN32_EXECUTABLE $<CONFIG:Release>)
+  if(MSVC)
+    target_link_options(valor PRIVATE $<$<CONFIG:Release>:/ENTRY:mainCRTStartup>)
+  endif()
+endif()
+
 if(APPLE)
   target_link_libraries(valor PRIVATE "-framework IOKit" "-framework Cocoa" "-framework OpenGL")
 endif()

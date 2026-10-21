@@ -51,6 +51,8 @@ cmake --build build -j
 ./build/valor          # Windows: build\Release\valor.exe
 ```
 
+**Platforms:** Linux and Windows. Every push is built on both by GitHub Actions; each run's **Artifacts** section has a ready-to-play folder for each platform. Windows release builds bundle their runtime, so they run on any Windows 10/11 PC without installing anything.
+
 ## Controls
 
 | Input | Action |
