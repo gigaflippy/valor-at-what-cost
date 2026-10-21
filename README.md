@@ -99,6 +99,7 @@ All game content lives in plain JSON files, so balancing or adding content needs
 | `data/enemies.json` | Every enemy: behaviour (`shooter`, `spinner`, `warden`), shape, stats, attacks, spawn chances |
 | `data/floors.json` | Floor names and colour palettes; the number of entries is the number of floors |
 | `data/rules.json` | Player stats, difficulty scaling, wave sizes, drop chances |
+| `data/sprites/` | Sprite sheets. `deserter.png` is generated from the pixel grids in `tools/sprites/deserter.py` |
 
 Each file starts with a `_comment` explaining its fields. Run with `--debug`, edit a file, press **F5** and the change applies instantly. A typo shows an error naming the exact file and field. Set the `VALOR_DATA` environment variable to load a different data folder.
 

@@ -26,6 +26,8 @@ struct Player {
     int cur = 0;
     float fireCd = 0, reloadT = 0, recoil = 0, emptyT = 0;
     float aim = 0;
+    float walkT = 0;                // advances while walking; drives the walk cycle
+    bool moving = false;
 };
 
 struct Bullet {
