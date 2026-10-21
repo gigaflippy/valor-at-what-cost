@@ -10,7 +10,7 @@
 namespace valor {
 
 void Game::updatePlayer(float dt) {
-    Vector2 mouseW = GetScreenToWorld2D(GetMousePosition(), cam);
+    Vector2 mouseW = screenToWorld(GetMousePosition());
     pl.aim = angleTo(pl.pos, mouseW);
 
     Vector2 in{0, 0};
@@ -114,6 +114,9 @@ void Game::fire() {
         spawnBullet(muzzle, a, sp, d.radius, d.damage, true, d.pierce, d.color);
     }
     burst(muzzle, 4, d.color, 60, 220, 0.12f, 4, pl.aim, 0.5f);
+    muzzleT = 0.07f;
+    muzzlePos = muzzle;
+    muzzleCol = d.color;
     switch (d.sound) {
         case GunSound::Shotgun: sShotgun.play(frand(0.9f, 1.1f), d.volume); break;
         case GunSound::Rail:    sRail.play(frand(0.95f, 1.05f), d.volume); break;

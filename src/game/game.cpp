@@ -10,8 +10,8 @@
 namespace valor {
 
 void Game::init() {
-    cam.zoom = 1.0f;
-    cam.offset = {SCREEN_W / 2.0f, SCREEN_H / 2.0f};
+    cam.zoom = ZOOM;
+    initGraphics();
     sShoot.load(900, 260, 0.07f, Osc::Square, 0.22f);
     sShotgun.load(2600, 300, 0.20f, Osc::Noise, 0.40f);
     sRail.load(1800, 120, 0.30f, Osc::Triangle, 0.45f);
@@ -32,6 +32,7 @@ void Game::unload() {
     for (Sfx* s : {&sShoot, &sShotgun, &sRail, &sEShoot, &sHit, &sDie, &sHurt, &sBlank,
                    &sPickup, &sRoll, &sDoor, &sChest, &sEmpty, &sBoom})
         s->unload();
+    unloadGraphics();
 }
 
 void Game::newRun() {
@@ -62,6 +63,7 @@ void Game::buildFloor() {
     curRoom = 0;
     dun.rooms[0].visited = true;
     cam.target = pl.pos;
+    placeBraziers();
     showBanner(TextFormat("FLOOR %d  -  %s", floor, theme().name.c_str()), 3.0f);
 }
 
@@ -97,6 +99,8 @@ void Game::update(float dt) {
 
     if (debug) debugKeys();
     runTime += dt;
+    muzzleT = std::max(0.0f, muzzleT - dt);
+    emitEmbers(dt);
     eShotSfxT -= dt;
     updatePlayer(dt);
     if (state != State::Playing) return;      // descended to victory this frame
@@ -116,7 +120,7 @@ void Game::update(float dt) {
     if (blankR >= 0) { blankR += dt * 1500.0f; if (blankR > 1000.0f) blankR = -1; }
 
     // Camera leads toward the cursor a little, like most twin-stick shooters
-    Vector2 mouseW = GetScreenToWorld2D(GetMousePosition(), cam);
+    Vector2 mouseW = screenToWorld(GetMousePosition());
     Vector2 look = Vector2Add(pl.pos, Vector2Scale(Vector2Subtract(mouseW, pl.pos), 0.22f));
     cam.target = Vector2Lerp(cam.target, look, 1.0f - expf(-10.0f * dt));
 }

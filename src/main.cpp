@@ -24,8 +24,19 @@ using namespace valor;
 
 int main(int argc, char** argv) {
     SetConfigFlags(FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
-    InitWindow(SCREEN_W, SCREEN_H, "Valor at What Cost");
-    SetWindowMinSize(960, 640);
+    InitWindow(CANVAS_W * 2, CANVAS_H * 2, "Valor at What Cost");
+    // Open at the largest whole multiple of the 480x270 canvas that fits the monitor
+    {
+        int m = GetCurrentMonitor();
+        int mw = GetMonitorWidth(m), mh = GetMonitorHeight(m);
+        int scale = 2;
+        while (CANVAS_W * (scale + 1) <= mw * 0.92f && CANVAS_H * (scale + 1) <= mh * 0.88f) scale++;
+        if (mw > 0 && mh > 0) {
+            SetWindowSize(CANVAS_W * scale, CANVAS_H * scale);
+            SetWindowPosition((mw - CANVAS_W * scale) / 2, (mh - CANVAS_H * scale) / 2);
+        }
+    }
+    SetWindowMinSize(CANVAS_W, CANVAS_H);
     SetExitKey(KEY_NULL);           // ESC is used for pause
     InitAudioDevice();
     SetTargetFPS(144);

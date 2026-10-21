@@ -23,6 +23,8 @@ You are a lone gunner descending through a dungeon that rebuilds itself every ru
 - **A boss with two phases.** The Warden fires rings, spirals and aimed fans, then turns red below half health and starts lobbing mortars that burst into rings.
 - **Four guns:** a trusty sidearm with infinite ammo, a shotgun, a rivet SMG, and a piercing railgun.
 - **Five themed floors**, from the Breach Halls down to the Gunmetal Abyss, each harder than the last.
+- **Pixel-art presentation.** The world is drawn on a 480×270 canvas and scaled up with crisp pixels, with three-quarter-view walls, outlined characters and dynamic lighting.
+- **Braziers and embers.** Every floor burns in its own colour: wall braziers light the rooms and shed embers into the dark.
 - **No asset files at all.** Every shape is drawn and every sound is synthesised in code at startup.
 
 | Combat | The Warden | Floor 2 |
@@ -114,7 +116,8 @@ Each file starts with a `_comment` explaining its fields. Run with `--debug`, ed
 | `src/game/rooms.cpp` | Door locking, wave spawning, room rewards |
 | `src/game/enemies.cpp` | Enemy AI, the Warden's bullet patterns, damage |
 | `src/game/combat.cpp` | Bullets, pickups and particles each frame |
-| `src/game/render.cpp`, `hud.cpp` | World rendering, HUD, minimap, menus |
+| `src/game/render.cpp` | Pixel canvas, three-quarter walls, depth sorting, outlines, lighting |
+| `src/game/hud.cpp` | HUD, minimap, menus |
 
 ## Ideas for next steps
 

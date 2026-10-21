@@ -40,7 +40,18 @@ struct Game {
     std::vector<Pickup>   pickups;
 
     // presentation
-    Camera2D cam{};
+    Camera2D cam{};                 // target = world point at the centre of the screen
+
+    // pixel-art renderer (render.cpp)
+    RenderTexture2D canvas{}, lightMap{};
+    Texture2D lightTex{};
+    bool gfxReady = false;
+    float pixelScale = 1;            // screen pixels per canvas pixel
+    Vector2 canvasPos{};             // screen position of the canvas' top-left corner
+    std::vector<Vector2> braziers;   // wall braziers on this floor (world positions)
+    float muzzleT = 0;
+    Vector2 muzzlePos{};
+    Color muzzleCol = WHITE;
     float shake = 0, hurtFlash = 0, blankR = -1, eShotSfxT = 0;
     Vector2 blankPos{};
     std::string banner;
@@ -132,15 +143,27 @@ struct Game {
 
     void draw();
 
-    void drawTiles(const Camera2D& view);
+    void initGraphics();
+    void unloadGraphics();
+    void layoutCanvas();
+    Vector2 screenToWorld(Vector2 s) const;
+    Vector2 worldToScreen(Vector2 w) const;
+    void placeBraziers();
+    void emitEmbers(float dt);
+    void drawFloor(int x0, int y0, int x1, int y1);
+    void drawWallTile(int x, int y);
+    void drawWorldSorted(int x0, int y0, int x1, int y1);
+    void drawLights(const Camera2D& view);
+    void drawEmissive();
+    void drawPrompts();
 
-    void drawRoomProps();
 
-    void drawPickup(const Pickup& p);
+    void drawPickup(const Pickup& p, int pass);
+    void drawChest(int room, int pass);
 
-    void drawEnemy(const Enemy& e);
+    void drawEnemy(const Enemy& e, int pass);
 
-    void drawPlayer();
+    void drawPlayer(int pass);
 
     void drawBullets();
 
