@@ -1,5 +1,27 @@
-Copyright (c) 2026 Georgi (github.com/gigaflippy). All rights reserved.
+Valor at What Cost
+Copyright (c) 2026 Georgi D. Georgiev (github.com/gigaflippy). All rights reserved.
 
-This source code and the game "Valor at What Cost" are the property of
-the author. No permission is granted to copy, modify, distribute, or use this
-software, in whole or in part, without prior written permission from the author.
+This software, including its source code, design, and all associated content
+(the "Software"), is the exclusive property of the author, Georgi D. Georgiev.
+
+No permission is granted to copy, modify, merge, publish, distribute,
+sublicense, sell, or otherwise use the Software, in whole or in part, without
+prior written permission from the author. Viewing the source code does not
+grant any licence to use it.
+
+Requests for permission may be sent to the author via GitHub:
+https://github.com/gigaflippy
+
+DISCLAIMER OF WARRANTY
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+THIRD-PARTY SOFTWARE
+This project uses raylib (https://www.raylib.com), Copyright (c) 2013-2024
+Ramon Santamaria (@raysan5), under the zlib/libpng licence. raylib is not
+included in this repository; it is downloaded at build time and remains under
+its own licence. The restrictions above apply only to the author's own work.

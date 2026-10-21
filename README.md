@@ -4,7 +4,7 @@
 
 **A top-down bullet-hell roguelike, written from scratch in C++.**
 
-*Created by **Georgi** ([@gigaflippy](https://github.com/gigaflippy))*
+*Created by **Georgi D. Georgiev** ([@gigaflippy](https://github.com/gigaflippy))*
 
 ![Title screen](screenshots/title.png)
 
@@ -105,6 +105,6 @@ cmake --build build -j
 
 ## Author
 
-Designed and developed by **Georgi** ([@gigaflippy](https://github.com/gigaflippy)).
+Designed and developed by **Georgi D. Georgiev** ([@gigaflippy](https://github.com/gigaflippy)).
 
-© 2026 Georgi. All rights reserved. See [LICENSE](LICENSE).
+© 2026 Georgi D. Georgiev. All rights reserved. See [LICENSE](LICENSE).

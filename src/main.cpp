@@ -1,6 +1,6 @@
 // ============================================================================
 //  VALOR AT WHAT COST
-//  Copyright (c) 2026 Georgi (github.com/gigaflippy). All rights reserved.
+//  Copyright (c) 2026 Georgi D. Georgiev (github.com/gigaflippy). All rights reserved.
 //  A top-down bullet-hell roguelike in C++17 + raylib.
 //
 //  Dodge-roll through bullet patterns, clear locked rooms, find guns in chests,
