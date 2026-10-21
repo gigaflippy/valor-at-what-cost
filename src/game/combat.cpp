@@ -84,7 +84,7 @@ void Game::updatePickups(float dt) {
 void Game::updateParticles(float dt) {
     for (auto& p : parts) {
         p.pos = Vector2Add(p.pos, Vector2Scale(p.vel, dt));
-        p.vel = Vector2Scale(p.vel, std::max(0.0f, 1.0f - 4.0f * dt));
+        p.vel = Vector2Scale(p.vel, std::max(0.0f, 1.0f - p.drag * dt));
         p.life -= dt;
     }
     parts.erase(std::remove_if(parts.begin(), parts.end(), [](const Particle& p) { return p.life <= 0; }), parts.end());

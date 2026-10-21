@@ -56,7 +56,7 @@ struct Enemy {
     bool enraged = false;
 };
 
-struct Particle { Vector2 pos, vel; float life, maxLife, size; Color col; };
+struct Particle { Vector2 pos, vel; float life, maxLife, size; Color col; float drag = 4.0f; };
 struct Pickup   { Vector2 pos; PickType type; float t = 0; bool alive = true; };
 
 }  // namespace valor
