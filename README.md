@@ -128,6 +128,17 @@ Each file starts with a `_comment` explaining its fields. Run with `--debug`, ed
 - Sprite sheets instead of primitive shapes
 - Gamepad support (raylib has it built in)
 
+## How this was built
+
+Valor is built with **Claude (Anthropic's AI) as a pair programmer**. Most code is written by Claude; every commit it wrote says so with a `Co-Authored-By: Claude` line.
+
+Georgi owns the project:
+
+- **Direction and design:** the genre, the name, the art direction, the characters and what gets built next.
+- **Review:** every change arrives as a pull request. Georgi reviews it, asks for changes when needed, and merges it himself; nothing is pushed straight to `main`.
+- **Testing:** each PR is built and played locally before merging, recorded in the PR's "What I tested" section. CI also builds every PR on Linux and Windows.
+- **Decisions:** [docs/DECISIONS.md](docs/DECISIONS.md) records each decision, who proposed it and why, including the times Georgi overruled Claude.
+
 ## Author
 
 Designed and developed by **Georgi D. Georgiev** ([@gigaflippy](https://github.com/gigaflippy)).
