@@ -23,7 +23,9 @@ FetchContent_MakeAvailable(raylib)
 get_target_property(RAYLIB_INC raylib INTERFACE_INCLUDE_DIRECTORIES)
 set_target_properties(raylib PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${RAYLIB_INC}")
 
-add_executable(valor src/main.cpp)
+file(GLOB_RECURSE VALOR_SOURCES CONFIGURE_DEPENDS src/*.cpp)
+add_executable(valor ${VALOR_SOURCES})
+target_include_directories(valor PRIVATE src)
 target_link_libraries(valor PRIVATE raylib)
 
 if(MSVC)
