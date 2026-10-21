@@ -18,7 +18,12 @@ FetchContent_Declare(
   GIT_TAG        5.5
   GIT_SHALLOW    TRUE
 )
-FetchContent_MakeAvailable(raylib)
+FetchContent_Declare(
+  json
+  URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(raylib json)
 # Treat raylib headers as system headers so their warnings don't drown ours
 get_target_property(RAYLIB_INC raylib INTERFACE_INCLUDE_DIRECTORIES)
 set_target_properties(raylib PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${RAYLIB_INC}")
@@ -26,7 +31,11 @@ set_target_properties(raylib PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${
 file(GLOB_RECURSE VALOR_SOURCES CONFIGURE_DEPENDS src/*.cpp)
 add_executable(valor ${VALOR_SOURCES})
 target_include_directories(valor PRIVATE src)
-target_link_libraries(valor PRIVATE raylib)
+target_link_libraries(valor PRIVATE raylib nlohmann_json::nlohmann_json)
+
+# Copy data/ next to the executable after every build, so the game finds it
+add_custom_command(TARGET valor POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/data $<TARGET_FILE_DIR:valor>/data)
 
 if(MSVC)
   target_compile_options(valor PRIVATE /W4)

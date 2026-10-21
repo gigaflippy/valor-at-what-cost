@@ -55,7 +55,7 @@ void Game::drawHUD() {
     Rectangle panel{(float)sw - 290, (float)sh - 96, 270, 76};
     DrawRectangleRounded(panel, 0.15f, 6, Fade(BLACK, 0.55f));
     DrawRectangleRoundedLinesEx(panel, 0.15f, 6, 2, Fade(d.color, 0.6f));
-    DrawText(d.name, (int)panel.x + 14, (int)panel.y + 10, 20, d.color);
+    DrawText(d.name.c_str(), (int)panel.x + 14, (int)panel.y + 10, 20, d.color);
     const char* ammoTxt = d.maxAmmo < 0 ? TextFormat("%d / INF", g.mag) : TextFormat("%d / %d", g.mag, g.ammo);
     DrawText(ammoTxt, (int)panel.x + 14, (int)panel.y + 38, 26, RAYWHITE);
     if (pl.emptyT > 0) DrawText("EMPTY", (int)panel.x + 170, (int)panel.y + 42, 20, {255, 90, 90, 255});
@@ -64,7 +64,7 @@ void Game::drawHUD() {
         DrawText(TextFormat("%d/%d  wheel / 1-4", pl.cur + 1, (int)pl.guns.size()), (int)panel.x + 14, (int)panel.y - 20, 14, Fade(RAYWHITE, 0.55f));
 
     // Floor label & stats
-    const char* fl = TextFormat("FLOOR %d / %d", floor, FINAL_FLOOR);
+    const char* fl = TextFormat("FLOOR %d / %d", floor, content().floorCount());
     textCentered(fl, sw / 2, 14, 20, Fade(th.accent, 0.9f));
     DrawText(TextFormat("Kills %d   %02d:%02d", kills, (int)runTime / 60, (int)runTime % 60), 20, sh - 30, 16, Fade(RAYWHITE, 0.45f));
 
@@ -75,7 +75,7 @@ void Game::drawHUD() {
         if (e.type != EType::Warden || e.spawnT > 0) continue;
         float w = std::min(620.0f, sw - 340.0f);
         Rectangle bar{sw / 2.0f - w / 2, (float)sh - 54, w, 18};
-        textCentered("THE WARDEN", sw / 2, (int)bar.y - 24, 18, RAYWHITE);
+        textCentered(upper(def(e).name).c_str(), sw / 2, (int)bar.y - 24, 18, RAYWHITE);
         DrawRectangleRec(bar, Fade(BLACK, 0.7f));
         DrawRectangle((int)bar.x + 2, (int)bar.y + 2, (int)((bar.width - 4) * std::max(0.0f, e.hp / e.maxHp)), (int)bar.height - 4,
                       e.enraged ? Color{230, 60, 70, 255} : th.accent);
@@ -150,7 +150,7 @@ void Game::drawTitle() {
         float a = k * 0.42f + titleT * 0.35f;
         Vector2 p = Vector2Add(c, fromAngle(a, rad));
         float fade = 1.0f - rad / 900.0f;
-        DrawCircleV(p, 7, Fade(ENEMY_BULLET, 0.5f * fade));
+        DrawCircleV(p, 7, Fade(content().rules.enemyBullet, 0.5f * fade));
         DrawCircleV(p, 3, Fade(WHITE, 0.6f * fade));
     }
     textCentered("VALOR AT WHAT COST", sw / 2 + 4, sh / 2 - 182, 64, Fade(BLACK, 0.6f));

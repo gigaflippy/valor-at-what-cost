@@ -6,7 +6,9 @@
 #pragma once
 #include "raylib.h"
 #include "raymath.h"
+#include <cctype>
 #include <cmath>
+#include <string>
 
 namespace valor {
 
@@ -19,6 +21,11 @@ inline Color   mix(Color a, Color b, float t) {
 }
 inline void textCentered(const char* s, int cx, int y, int size, Color c) {
     DrawText(s, cx - MeasureText(s, size) / 2, y, size, c);
+}
+
+inline std::string upper(std::string s) {
+    for (char& ch : s) ch = (char)std::toupper((unsigned char)ch);
+    return s;
 }
 
 }  // namespace valor

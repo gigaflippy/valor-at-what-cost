@@ -2,47 +2,94 @@
 //  VALOR AT WHAT COST
 //  Copyright (c) 2026 Georgi D. Georgiev (github.com/gigaflippy). All rights reserved.
 // ============================================================================
-// Content tables: guns, floor themes. (Phase 0 moves these into data files.)
+// Game content loaded from the JSON files in data/: guns, enemies, floors and
+// balance rules. Code reads these through content(); nothing here is hardcoded.
 #pragma once
 #include "raylib.h"
-#include "core/config.hpp"
+#include "game/entities.hpp"
+#include <string>
+#include <vector>
 
 namespace valor {
 
+enum class GunSound { Pistol, Shotgun, Rail };
+
 struct GunDef {
-    const char* name;
-    float fireDelay;
-    int   mag;
-    int   maxAmmo;      // reserve; -1 = infinite
-    float reload;
-    int   pellets;
-    float spread;       // radians
-    float speed;
-    float damage;
-    float radius;
-    bool  pierce;
-    Color color;
+    std::string id, name;
+    bool  starter = false;
+    float fireDelay = 0.2f;
+    int   mag = 1;
+    int   maxAmmo = -1;          // reserve; -1 = infinite
+    float reload = 1.0f;
+    int   pellets = 1;
+    float spread = 0;            // radians
+    float speed = 600;
+    float damage = 1;
+    float radius = 5;
+    bool  pierce = false;
+    Color color = WHITE;
+    GunSound sound = GunSound::Pistol;
+    float volume = 1.0f;
+    float shake = 0.03f;
+    float length = 18;           // drawn barrel length
 };
 
-inline const GunDef GUNS[] = {
-    {"Rusty Sidearm", 0.22f,  8,  -1, 0.9f, 1, 0.04f,  720.0f,  6.0f, 5.0f, false, {255, 220, 120, 255}},
-    {"Scattergun",    0.65f,  6,  60, 1.3f, 6, 0.38f,  620.0f,  4.5f, 4.5f, false, {255, 160,  80, 255}},
-    {"Riveter",       0.07f, 32, 320, 1.4f, 1, 0.12f,  820.0f,  3.2f, 4.0f, false, {190, 255, 130, 255}},
-    {"Railspike",     0.90f,  4,  36, 1.6f, 1, 0.00f, 1300.0f, 28.0f, 6.0f, true,  {140, 220, 255, 255}},
+struct EnemyDef {
+    std::string id, name;
+    EType ai = EType::Shooter;
+    Shape shape = Shape::Round;
+    bool  boss = false;
+    float radius = 15, hp = 10, hpPerFloor = 0, speed = 80;
+    Color color = WHITE, enragedColor = RED;
+    // spawning (regular enemies)
+    int   spawnMinFloor = 1;
+    float spawnChance = 0, spawnChancePerFloor = 0;
+    bool  spawnFill = false;
+    // movement
+    float keepFar = 0, keepNear = 0, strafeMin = 1, strafeMax = 1, strafeSpeed = 0;
+    float wanderMin = 1, wanderMax = 1, wanderSpeed = 0;
+    // attack
+    float fireMin = 1, fireMax = 1, bulletSpeed = 200, bulletRadius = 7;
+    int   count = 1;
+    float spreadStep = 0, aimJitter = 0;                 // radians
+    float burstTime = 0, burstTick = 0.1f, burstTurn = 0; // spinner; burstTurn in radians
+    int   arms = 4;
+    // boss
+    float enrageAt = 0.5f, spawnDelay = 0.9f;
 };
-constexpr int GUN_COUNT = sizeof(GUNS) / sizeof(GUNS[0]);
 
-struct Theme { Color floorA, floorB, wall, wallTop, accent, bg; };
-inline const Theme THEMES[FINAL_FLOOR] = {
-    {{46, 44, 56, 255}, {50, 48, 61, 255}, {62, 56, 74, 255}, {108, 100, 126, 255}, {255, 200,  90, 255}, {14, 13, 18, 255}},
-    {{34, 46, 42, 255}, {38, 51, 46, 255}, {48, 66, 58, 255}, { 88, 118, 102, 255}, {150, 255, 170, 255}, {10, 15, 13, 255}},
-    {{52, 42, 34, 255}, {57, 46, 37, 255}, {76, 60, 46, 255}, {130, 106,  82, 255}, {255, 170,  90, 255}, {16, 12,  9, 255}},
-    {{56, 32, 32, 255}, {62, 36, 35, 255}, {84, 44, 40, 255}, {148,  80,  68, 255}, {255, 120,  80, 255}, {18,  8,  8, 255}},
-    {{28, 30, 52, 255}, {32, 34, 58, 255}, {46, 44, 86, 255}, { 90,  86, 148, 255}, {170, 150, 255, 255}, { 8,  8, 18, 255}},
+struct Theme {
+    std::string name;
+    Color floorA, floorB, wall, wallTop, accent, bg;
 };
-inline const char* const FLOOR_NAMES[FINAL_FLOOR] = {
-    "The Breach Halls", "The Rusted Gutters", "The Cinder Mines", "The Hollow Forge", "The Gunmetal Abyss"};
 
-inline const Color ENEMY_BULLET = {255, 80, 110, 255};
+struct Rules {
+    float playerSpeed = 230, rollTime = 0.38f, rollSpeed = 470, rollIframeEnd = 0.08f, hitInvuln = 1.2f;
+    int   halfHearts = 6, blanksPerFloor = 2, maxBlanks = 9, healOnDescend = 2;
+    float fireRatePerFloor = 0.15f, firstShotMin = 0.6f, firstShotMax = 1.6f;
+    int   waveMin = 3, waveMax = 5, waveBonusEvery = 2;
+    float extraWaveChance = 0.25f, extraWaveChancePerFloor = 0.12f, waveDelay = 0.7f, spawnMinDistance = 260;
+    float dropHeart = 0.22f, dropAmmo = 0.30f, dropBlank = 0.08f, enemyAmmoDrop = 0.06f;
+    Color enemyBullet = {255, 80, 110, 255};
+};
+
+struct Content {
+    std::vector<GunDef>   guns;
+    std::vector<EnemyDef> enemies;
+    std::vector<Theme>    floors;
+    Rules rules;
+    std::string dir;              // where the files were loaded from
+
+    int floorCount() const { return (int)floors.size(); }
+    int starterGun() const;
+    int bossEnemy() const;
+};
+
+// The loaded content. Valid after a successful loadContent().
+const Content& content();
+
+// Finds the data/ folder and loads every file. On failure, returns false and
+// leaves the previously loaded content untouched; `error` says what is wrong.
+bool loadContent(std::string& error);
 
 }  // namespace valor

@@ -1,0 +1,33 @@
+{
+  "_comment": "Global balance. Times are in seconds, distances in pixels (one tile = 40 px), chances from 0 to 1.",
+  "player": {
+    "speed": 230,
+    "rollTime": 0.38,
+    "rollSpeed": 470,
+    "rollIframeEnd": 0.08,
+    "hitInvuln": 1.2,
+    "halfHearts": 6,
+    "blanksPerFloor": 2,
+    "maxBlanks": 9,
+    "healOnDescend": 2
+  },
+  "difficulty": {
+    "fireRatePerFloor": 0.15,
+    "firstShotDelay": [0.6, 1.6]
+  },
+  "waves": {
+    "size": [3, 5],
+    "sizeBonusEveryFloors": 2,
+    "extraWaveChance": 0.25,
+    "extraWaveChancePerFloor": 0.12,
+    "delayBetween": 0.7,
+    "spawnMinDistance": 260
+  },
+  "drops": {
+    "roomHeart": 0.22,
+    "roomAmmo": 0.30,
+    "roomBlank": 0.08,
+    "enemyAmmo": 0.06
+  },
+  "enemyBulletColor": "#FF506E"
+}

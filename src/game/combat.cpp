@@ -21,8 +21,8 @@ void Game::updateBullets(float dt) {
             if (b.splitT <= 0) {
                 b.alive = false;
                 for (int k = 0; k < 12; k++)
-                    spawnBullet(b.pos, k * 2 * PI / 12, 170, 7, 1, false, false, ENEMY_BULLET, -1, true);
-                burst(b.pos, 10, ENEMY_BULLET, 40, 200, 0.3f, 4);
+                    spawnBullet(b.pos, k * 2 * PI / 12, 170, 7, 1, false, false, content().rules.enemyBullet, -1, true);
+                burst(b.pos, 10, content().rules.enemyBullet, 40, 200, 0.3f, 4);
                 continue;
             }
         }
@@ -44,7 +44,7 @@ void Game::updateBullets(float dt) {
                 }
             }
         } else if (CheckCollisionCircles(b.pos, b.r * 0.8f, pl.pos, pl.r * 0.55f)) {
-            if (pl.invuln <= 0 && pl.rollT <= ROLL_IFRAME_END) {
+            if (pl.invuln <= 0 && pl.rollT <= content().rules.rollIframeEnd) {
                 b.alive = false;
                 hurtPlayer();
                 if (state != State::Playing) return;
@@ -69,10 +69,10 @@ void Game::updatePickups(float dt) {
                 break;
             case PickType::Ammo:
                 for (auto& g : pl.guns)
-                    if (GUNS[g.def].maxAmmo > 0) g.ammo = std::min(GUNS[g.def].maxAmmo, g.ammo + GUNS[g.def].maxAmmo / 2);
+                    if (int cap = content().guns[g.def].maxAmmo; cap > 0) g.ammo = std::min(cap, g.ammo + cap / 2);
                 break;
             case PickType::Blank:
-                pl.blanks = std::min(pl.blanks + 1, 9);
+                pl.blanks = std::min(pl.blanks + 1, content().rules.maxBlanks);
                 break;
         }
         p.alive = false;

@@ -29,14 +29,14 @@ void Game::updatePlayer(float dt) {
     // Dodge roll
     if (pl.rollT > 0) {
         pl.rollT -= dt;
-        dun.moveCircle(pl.pos, pl.r, Vector2Scale(pl.rollDir, ROLL_SPEED * dt));
+        dun.moveCircle(pl.pos, pl.r, Vector2Scale(pl.rollDir, content().rules.rollSpeed * dt));
         if (chance(0.6f)) burst({pl.pos.x, pl.pos.y + pl.r}, 1, {180, 170, 160, 160}, 10, 40, 0.35f, 4);
         if (pl.rollT <= 0) pl.rollCd = 0.15f;
     } else {
-        dun.moveCircle(pl.pos, pl.r, Vector2Scale(in, PLAYER_SPEED * dt));
+        dun.moveCircle(pl.pos, pl.r, Vector2Scale(in, content().rules.playerSpeed * dt));
         if ((IsKeyPressed(KEY_SPACE) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) && pl.rollCd <= 0) {
             pl.rollDir = Vector2Length(in) > 0 ? in : fromAngle(pl.aim);
-            pl.rollT = ROLL_TIME;
+            pl.rollT = content().rules.rollTime;
             sRoll.play(frand(0.9f, 1.1f));
         }
     }
@@ -114,9 +114,12 @@ void Game::fire() {
         spawnBullet(muzzle, a, sp, d.radius, d.damage, true, d.pierce, d.color);
     }
     burst(muzzle, 4, d.color, 60, 220, 0.12f, 4, pl.aim, 0.5f);
-    if (d.pellets > 1)  { sShotgun.play(frand(0.9f, 1.1f)); shake += 0.14f; }
-    else if (d.pierce)  { sRail.play(frand(0.95f, 1.05f)); shake += 0.22f; }
-    else                { sShoot.play(frand(0.9f, 1.15f), d.fireDelay < 0.1f ? 0.6f : 1.0f); shake += 0.03f; }
+    switch (d.sound) {
+        case GunSound::Shotgun: sShotgun.play(frand(0.9f, 1.1f), d.volume); break;
+        case GunSound::Rail:    sRail.play(frand(0.95f, 1.05f), d.volume); break;
+        case GunSound::Pistol:  sShoot.play(frand(0.9f, 1.15f), d.volume); break;
+    }
+    shake += d.shake;
     if (g.mag == 0) startReload();
 }
 
@@ -146,8 +149,8 @@ void Game::interact() {
     }
     if (hatchActive && Vector2Distance(pl.pos, hatchPos) < 60) {
         floor++;
-        if (floor > FINAL_FLOOR) { floor = FINAL_FLOOR; state = State::Won; return; }
-        pl.hp = std::min(pl.maxHp, pl.hp + 2);
+        if (floor > content().floorCount()) { floor = content().floorCount(); state = State::Won; return; }
+        pl.hp = std::min(pl.maxHp, pl.hp + content().rules.healOnDescend);
         buildFloor();
     }
 }
@@ -156,17 +159,18 @@ void Game::openChest(Room& r) {
     r.chestOpened = true;
     Vector2 c = dun.roomCenter(curRoom);
     std::vector<int> unowned;
-    for (int i = 0; i < GUN_COUNT; i++) {
+    const auto& guns = content().guns;
+    for (int i = 0; i < (int)guns.size(); i++) {
         bool owned = false;
         for (auto& g : pl.guns) owned |= g.def == i;
         if (!owned) unowned.push_back(i);
     }
     if (!unowned.empty()) {
         int d = unowned[irand(0, (int)unowned.size() - 1)];
-        pl.guns.push_back({d, GUNS[d].mag, GUNS[d].maxAmmo});
+        pl.guns.push_back({d, guns[d].mag, guns[d].maxAmmo});
         pl.cur = (int)pl.guns.size() - 1;
         pl.reloadT = 0;
-        showBanner(TextFormat("You found the %s!", GUNS[d].name), 2.5f);
+        showBanner(TextFormat("You found the %s!", guns[d].name.c_str()), 2.5f);
     } else {
         pickups.push_back({{c.x - 30, c.y + 40}, PickType::Heart});
         pickups.push_back({{c.x + 30, c.y + 40}, PickType::Ammo});

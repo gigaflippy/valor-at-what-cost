@@ -37,7 +37,10 @@ void Game::unload() {
 void Game::newRun() {
     floor = 1;
     pl = Player{};
-    pl.guns = {{0, GUNS[0].mag, -1}};
+    pl.hp = pl.maxHp = content().rules.halfHearts;
+    pl.blanks = 0;
+    int starter = content().starterGun();
+    pl.guns = {{starter, content().guns[starter].mag, content().guns[starter].maxAmmo}};
     kills = 0;
     runTime = 0;
     buildFloor();
@@ -54,12 +57,12 @@ void Game::buildFloor() {
     hatchActive = false;
     waveDelay = 0;
     pl.pos = dun.roomCenter(0);
-    pl.blanks = std::max(pl.blanks, 2);
+    pl.blanks = std::max(pl.blanks, content().rules.blanksPerFloor);
     pl.rollT = 0;
     curRoom = 0;
     dun.rooms[0].visited = true;
     cam.target = pl.pos;
-    showBanner(TextFormat("FLOOR %d  -  %s", floor, FLOOR_NAMES[floor - 1]), 3.0f);
+    showBanner(TextFormat("FLOOR %d  -  %s", floor, theme().name.c_str()), 3.0f);
 }
 
 void Game::burst(Vector2 p, int n, Color c, float sMin, float sMax, float life, float size, float dirA, float arc) {
@@ -119,6 +122,30 @@ void Game::update(float dt) {
 }
 
 void Game::debugKeys() {
+    if (IsKeyPressed(KEY_F5)) {   // hot-reload data/ while playing
+        std::string err;
+        if (loadContent(err)) {
+            // Entries may have been removed: drop anything that now points past the end
+            const Content& c = content();
+            for (auto& e : enemies)
+                if (e.def >= (int)c.enemies.size()) e.alive = false;
+            pl.guns.erase(std::remove_if(pl.guns.begin(), pl.guns.end(),
+                                         [&](const Gun& g) { return g.def >= (int)c.guns.size(); }),
+                          pl.guns.end());
+            if (pl.guns.empty()) pl.guns.push_back({c.starterGun(), c.guns[c.starterGun()].mag, c.guns[c.starterGun()].maxAmmo});
+            pl.cur = std::min(pl.cur, (int)pl.guns.size() - 1);
+            showBanner("Data reloaded", 1.2f);
+        }
+        else { showBanner("Data error - see console", 2.5f); TraceLog(LOG_ERROR, "DATA: %s", err.c_str()); }
+    }
+    if (IsKeyPressed(KEY_F4)) {   // spawn one of every regular enemy around the player
+        int n = 0;
+        for (int i = 0; i < (int)content().enemies.size(); i++) {
+            if (content().enemies[i].boss) continue;
+            Vector2 p = Vector2Add(pl.pos, fromAngle(n++ * 1.7f, 170));
+            if (!dun.circleSolid(p, 20)) enemies.push_back(makeEnemy(i, p));
+        }
+    }
     if (IsKeyPressed(KEY_F1)) { god = !god; showBanner(god ? "GOD MODE ON" : "GOD MODE OFF", 1.0f); }
     if (IsKeyPressed(KEY_F2))
         for (auto& e : enemies) if (e.alive) { e.spawnT = 0; damageEnemy(e, 1e6f, {1, 0}); }
