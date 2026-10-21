@@ -95,6 +95,15 @@ void Game::initGraphics() {
     lightTex = LoadTextureFromImage(img);
     UnloadImage(img);
     SetTextureFilter(lightTex, TEXTURE_FILTER_BILINEAR);
+
+    // Player sprite sheet (optional: shapes are drawn if it is missing)
+    std::string sheet = content().dir + "/sprites/deserter.png";
+    if (FileExists(sheet.c_str())) {
+        playerSprite = LoadTexture(sheet.c_str());
+        SetTextureFilter(playerSprite, TEXTURE_FILTER_POINT);
+    } else {
+        TraceLog(LOG_WARNING, "SPRITE: %s not found, drawing the player with shapes", sheet.c_str());
+    }
     gfxReady = true;
 }
 
@@ -103,6 +112,7 @@ void Game::unloadGraphics() {
     UnloadRenderTexture(canvas);
     UnloadRenderTexture(lightMap);
     UnloadTexture(lightTex);
+    if (playerSprite.id != 0) UnloadTexture(playerSprite);
     gfxReady = false;
 }
 
@@ -497,53 +507,78 @@ void Game::drawEnemy(const Enemy& e, int pass) {
 
 void Game::drawPlayer(int pass) {
     if (pl.invuln > 0 && fmodf(titleT, 0.12f) < 0.06f) return;   // i-frame flicker
-    Color cloak{70, 150, 220, 255}, cloakDark{44, 98, 160, 255}, face{240, 226, 200, 255};
+    // The Deserter's palette, from docs/concept/deserter-sheet.png
+    const Color cloak{53, 70, 103, 255}, cloakDark{38, 50, 77, 255}, face{227, 180, 140, 255}, gold{194, 149, 72, 255};
+    const bool sprite = playerSprite.id != 0;
+    const float feet = pl.pos.y + pl.r;
     if (pass == 1) shadow({pl.pos.x, pl.pos.y + pl.r * 0.9f}, pl.r);
 
     if (pl.rollT > 0) {
         float k = 1.0f - pl.rollT / content().rules.rollTime;
         if (pass == 1)
             for (int i = 1; i <= 3; i++)
-                DrawCircleV(Vector2Subtract(pl.pos, Vector2Scale(pl.rollDir, i * 9.0f)), pl.r * 0.9f, Fade(cloak, 0.18f * (4 - i)));
+                DrawCircleV(Vector2Subtract(pl.pos, Vector2Scale(pl.rollDir, i * 9.0f)), pl.r * 0.9f, Fade(cloak, 0.22f * (4 - i)));
         float squash = 0.75f + 0.25f * fabsf(cosf(k * PI * 2));
         float rx = pl.r * (2 - squash) * 1.1f, ry = pl.r * squash * 1.1f;
         if (pass == 0) DrawEllipse((int)pl.pos.x, (int)pl.pos.y, rx + OL, ry + OL, OUTLINE);
-        else DrawEllipse((int)pl.pos.x, (int)pl.pos.y, rx, ry, cloak);
+        else {
+            DrawEllipse((int)pl.pos.x, (int)pl.pos.y, rx, ry, cloak);
+            DrawEllipse((int)pl.pos.x, (int)(pl.pos.y - ry * 0.3f), rx * 0.5f, ry * 0.35f, mix(cloak, WHITE, 0.15f));
+        }
         return;
     }
 
     const GunDef& d = gunDef();
     float back = pl.recoil * 4;
-    bool behind = sinf(pl.aim) < -0.2f;   // aiming up: gun goes behind the body
-    Vector2 hand = {pl.pos.x, pl.pos.y + 2};
+    float s = sinf(pl.aim), c = cosf(pl.aim);
+    // Facing: 0 = toward the camera, 1 = away (back view), 2 = side (mirrored when aiming left)
+    int facing = s < -0.45f ? 1 : s > 0.6f ? 0 : 2;
+    bool behind = facing == 1;              // aiming up: gun goes behind the body
+    Vector2 hand = handPos();
     auto drawGun = [&] {
         oBar(hand, -(6 - back), d.length + 4, 3 * PX, pl.aim * RAD2DEG, {196, 198, 210, 255}, pass);
         if (pass == 1) oBar(hand, -(6 - back) - d.length * 0.5f, d.length * 0.5f, PX, pl.aim * RAD2DEG, d.color, 1);
     };
     if (behind) drawGun();
-    // Body (cloak) with a hood-shaped head on top: chibi proportions, taller than the hitbox
-    oCircle({pl.pos.x, pl.pos.y + 1}, pl.r * 1.05f, cloak, pass);
-    Vector2 head{roundf((pl.pos.x + cosf(pl.aim) * 2) / PX) * PX, pl.pos.y - pl.r * 1.0f};
-    oCircle(head, pl.r * 0.82f, cloakDark, pass);
-    if (pass == 1) {
-        // Cloak shading: lit shoulder, dark hem, a gold clasp
-        DrawCircleV({pl.pos.x - pl.r * 0.35f, pl.pos.y - pl.r * 0.2f}, pl.r * 0.45f, mix(cloak, WHITE, 0.18f));
-        DrawRectangleRec({pl.pos.x - pl.r, pl.pos.y + pl.r * 0.55f, pl.r * 2, 2 * PX}, cloakDark);
-        DrawRectangleRec({pl.pos.x - PX, pl.pos.y - pl.r * 0.35f, 2 * PX, 2 * PX}, {250, 200, 90, 255});
-        // Face peeking out of the hood, turned toward the aim
-        if (!behind) {
-            float side = cosf(pl.aim) > 0 ? 1.0f : -1.0f;
-            Vector2 f{head.x + side * 2 * PX, head.y + PX};
-            DrawRectangleRec({f.x - 3 * PX, f.y - 2 * PX, 6 * PX, 4 * PX}, face);
-            DrawRectangleRec({f.x - 2 * PX + side * PX, f.y - PX, PX, 2 * PX}, OUTLINE);
-            DrawRectangleRec({f.x + side * PX + PX, f.y - PX, PX, 2 * PX}, OUTLINE);
+
+    if (sprite) {
+        // 16x24 frames; walk cycle: step A, idle, step B, idle at 8 frames a second
+        static const int CYCLE[4] = {1, 0, 2, 0};
+        int frame = pl.moving ? CYCLE[(int)(pl.walkT * 8) % 4] : 0;
+        bool flip = facing == 2 && c < 0;
+        Rectangle src{frame * 16.0f, facing * 24.0f, flip ? -16.0f : 16.0f, 24.0f};
+        float x = roundf(pl.pos.x / PX) * PX - 8 * PX, y = roundf(feet / PX) * PX - 24 * PX;
+        if (pass == 0) {
+            const Vector2 offs[4] = {{-OL, 0}, {OL, 0}, {0, -OL}, {0, OL}};
+            for (Vector2 o : offs)
+                DrawTexturePro(playerSprite, src, {x + o.x, y + o.y, 16 * PX, 24 * PX}, {0, 0}, 0, OUTLINE);
+        } else {
+            DrawTexturePro(playerSprite, src, {x, y, 16 * PX, 24 * PX}, {0, 0}, 0, WHITE);
+        }
+    } else {
+        // Fallback when the sprite file is missing: the shape-drawn hooded gunner
+        oCircle({pl.pos.x, pl.pos.y + 1}, pl.r * 1.05f, cloak, pass);
+        Vector2 head{roundf((pl.pos.x + c * 2) / PX) * PX, pl.pos.y - pl.r * 1.0f};
+        oCircle(head, pl.r * 0.82f, cloakDark, pass);
+        if (pass == 1) {
+            DrawCircleV({pl.pos.x - pl.r * 0.35f, pl.pos.y - pl.r * 0.2f}, pl.r * 0.45f, mix(cloak, WHITE, 0.18f));
+            DrawRectangleRec({pl.pos.x - pl.r, pl.pos.y + pl.r * 0.55f, pl.r * 2, 2 * PX}, cloakDark);
+            DrawRectangleRec({pl.pos.x - PX, pl.pos.y - pl.r * 0.35f, 2 * PX, 2 * PX}, gold);
+            if (!behind) {
+                float side = c > 0 ? 1.0f : -1.0f;
+                Vector2 f{head.x + side * 2 * PX, head.y + PX};
+                DrawRectangleRec({f.x - 3 * PX, f.y - 2 * PX, 6 * PX, 4 * PX}, face);
+                DrawRectangleRec({f.x - 2 * PX + side * PX, f.y - PX, PX, 2 * PX}, OUTLINE);
+                DrawRectangleRec({f.x + side * PX + PX, f.y - PX, PX, 2 * PX}, OUTLINE);
+            }
         }
     }
     if (!behind) drawGun();
 
     if (pl.reloadT > 0) {
         float k = 1.0f - pl.reloadT / d.reload;
-        Rectangle bar{pl.pos.x - 8 * PX, pl.pos.y - pl.r * 2.2f, 16 * PX, PX};
+        float top = sprite ? roundf(feet / PX) * PX - 27 * PX : pl.pos.y - pl.r * 2.2f;
+        Rectangle bar{pl.pos.x - 8 * PX, top, 16 * PX, PX};
         oRect(bar, {50, 50, 60, 255}, pass);
         if (pass == 1) DrawRectangleRec({bar.x, bar.y, bar.width * k, PX}, RAYWHITE);
     }

@@ -45,6 +45,7 @@ struct Game {
     // pixel-art renderer (render.cpp)
     RenderTexture2D canvas{}, lightMap{};
     Texture2D lightTex{};
+    Texture2D playerSprite{};        // data/sprites/deserter.png; id 0 = not found, shapes are drawn instead
     bool gfxReady = false;
     float pixelScale = 1;            // screen pixels per canvas pixel
     Vector2 canvasPos{};             // screen position of the canvas' top-left corner
@@ -88,6 +89,8 @@ struct Game {
 
     void debugKeys();
 
+    // Where the gun is held: a little above the centre of the player's collision circle
+    Vector2 handPos() const { return {pl.pos.x, pl.pos.y - 6}; }
     Gun& gun() { return pl.guns[pl.cur]; }
     const GunDef& gunDef() { return content().guns[gun().def]; }
 

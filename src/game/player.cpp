@@ -11,7 +11,7 @@ namespace valor {
 
 void Game::updatePlayer(float dt) {
     Vector2 mouseW = screenToWorld(GetMousePosition());
-    pl.aim = angleTo(pl.pos, mouseW);
+    pl.aim = angleTo(handPos(), mouseW);
 
     Vector2 in{0, 0};
     if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP))    in.y -= 1;
@@ -34,6 +34,8 @@ void Game::updatePlayer(float dt) {
         if (pl.rollT <= 0) pl.rollCd = 0.15f;
     } else {
         dun.moveCircle(pl.pos, pl.r, Vector2Scale(in, content().rules.playerSpeed * dt));
+        pl.moving = Vector2Length(in) > 0;
+        pl.walkT = pl.moving ? pl.walkT + dt : 0;
         if ((IsKeyPressed(KEY_SPACE) || IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) && pl.rollCd <= 0) {
             pl.rollDir = Vector2Length(in) > 0 ? in : fromAngle(pl.aim);
             pl.rollT = content().rules.rollTime;
@@ -106,7 +108,7 @@ void Game::fire() {
     g.mag--;
     pl.fireCd = d.fireDelay;
     pl.recoil = 1.0f;
-    Vector2 muzzle = Vector2Add(pl.pos, fromAngle(pl.aim, 26));
+    Vector2 muzzle = Vector2Add(handPos(), fromAngle(pl.aim, 26));
     for (int p = 0; p < d.pellets; p++) {
         float a = d.pellets > 1 ? pl.aim - d.spread + 2 * d.spread * (p + 0.5f) / d.pellets + frand(-0.05f, 0.05f)
                                 : pl.aim + frand(-d.spread, d.spread);
