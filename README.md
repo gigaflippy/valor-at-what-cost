@@ -83,21 +83,26 @@ cmake --build build -j
 - **F2**: kill everything in the room
 - **F3**: teleport to the boss room
 
-## Code tour (`src/main.cpp`)
+## Code tour
 
-| Section | What's there |
+| Path | What's there |
 |---|---|
-| `GUNS[]`, `THEMES[]` | Tuning tables: change numbers here to rebalance |
-| `generateFloor()` | Room tree growth, boss/chest placement, tile carving, pillars |
-| `updateRooms()` | Door locking, wave spawning, room-clear rewards |
-| `updateEnemies()` / `updateBoss()` | Enemy AI and bullet patterns |
-| `updateBullets()` | Movement, wall hits, damage, splitting mortars |
-| `synthWave()` / `Sfx` | Procedural sound effects |
-| `draw*()` | All rendering, HUD and minimap |
+| `src/main.cpp` | Window, audio device and the main loop |
+| `src/core/` | Global constants (`config.hpp`), random numbers, math and text helpers |
+| `src/world/dungeon.*` | Floor generation (room tree, boss/chest placement, pillars) and tile collision |
+| `src/audio/sfx.*` | Procedural sound synthesis and polyphonic playback |
+| `src/game/content.hpp` | Tuning tables: guns and floor themes. Change numbers here to rebalance |
+| `src/game/entities.hpp` | Plain data for the player, enemies, bullets, pickups, particles |
+| `src/game/game.hpp` | The `Game` class that owns a run's state |
+| `src/game/game.cpp` | Run lifecycle, the per-frame update, debug keys |
+| `src/game/player.cpp` | Movement, dodge roll, shooting, reloading, blanks, chests |
+| `src/game/rooms.cpp` | Door locking, wave spawning, room rewards |
+| `src/game/enemies.cpp` | Enemy AI, the Warden's bullet patterns, damage |
+| `src/game/combat.cpp` | Bullets, pickups and particles each frame |
+| `src/game/render.cpp`, `hud.cpp` | World rendering, HUD, minimap, menus |
 
 ## Ideas for next steps
 
-- Split `main.cpp` into modules (`dungeon`, `entities`, `render`, `audio`)
 - Shop rooms and a currency drop
 - Active items and passive upgrades
 - Sprite sheets instead of primitive shapes
