@@ -508,7 +508,7 @@ void Game::drawEnemy(const Enemy& e, int pass) {
 void Game::drawPlayer(int pass) {
     if (pl.invuln > 0 && fmodf(titleT, 0.12f) < 0.06f) return;   // i-frame flicker
     // The Deserter's palette, from docs/concept/deserter-sheet.png
-    const Color cloak{53, 70, 103, 255}, cloakDark{38, 50, 77, 255}, face{227, 180, 140, 255}, gold{194, 149, 72, 255};
+    const Color cloak{53, 70, 103, 255}, cloakDark{38, 50, 77, 255}, face{201, 151, 111, 255}, gold{194, 149, 72, 255};
     const bool sprite = playerSprite.id != 0;
     const float feet = pl.pos.y + pl.r;
     if (pass == 1) shadow({pl.pos.x, pl.pos.y + pl.r * 0.9f}, pl.r);

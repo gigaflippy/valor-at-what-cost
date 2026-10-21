@@ -14,14 +14,14 @@ Reference images for the game's look. **Nothing in this folder ships in the game
 
 ## The Deserter's palette
 
-Taken from `deserter-sheet.png`, plus the skin tone, cloak shadow and highlight the sheet was missing:
+Taken from `deserter-sheet.png`, plus the skin tones, cloak shadow and highlight the sheet was missing. The skin is darker and weathered on purpose: the first sprite read as a young, innocent kid, not a soldier who fled a war.
 
 | Use | Colour |
 |---|---|
 | Cloak | `#354667` |
 | Cloak shadow | `#26324D` |
 | Cloak highlight | `#4D6596` |
-| Skin / skin shadow | `#E3B48C` / `#BF8866` |
+| Weathered skin / shadow / stubble | `#C9976F` / `#8E6247` / `#5E4535` |
 | Hair, eyes | `#322724` |
 | Tunic | `#97856F` |
 | Trousers | `#514235` |

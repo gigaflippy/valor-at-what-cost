@@ -25,14 +25,15 @@ PALETTE = {
     "B": "#354667",  # cloak blue (sheet)
     "b": "#26324D",  # cloak shadow
     "L": "#4D6596",  # cloak highlight
-    "S": "#E3B48C",  # skin
-    "s": "#BF8866",  # skin shadow
+    "S": "#C9976F",  # weathered skin
+    "s": "#8E6247",  # skin in the hood's shadow
+    "Z": "#5E4535",  # stubble
     "H": "#322724",  # hair, eyes (sheet)
     "T": "#97856F",  # tunic (sheet)
     "t": "#514235",  # trousers, dark tunic (sheet)
     "K": "#6A4C38",  # leather (sheet)
     "G": "#C29548",  # gold clasp, buckle (sheet)
-    "R": "#8D5238",  # rust (sheet)
+    "R": "#8D5238",  # rust, scar (sheet)
     "D": "#3A3B40",  # boots (sheet)
 }
 
@@ -41,22 +42,22 @@ FRONT = """
 ....BBBBBBBB....
 ...BLLBBBBBBB...
 ..BLBBBBBBBBBB..
-..BLBBHHHHBBBB..
-.BBBHHHHHHHHBBB.
-.BBHHHHSHHHHHBB.
-.BBHsSSSSSSsHBB.
-.BBsSHSSSSHSsBB.
-.bBsSHSSSSHSsBb.
-.bBBSSSSSSSSBBb.
-.bBBBsSSSSsBBBb.
+..BBBBBBBBBBBB..
+.BBBBbbbbbbBBBB.
+.BBBbHHHHHHbBBB.
+.BBbssssssssbBB.
+.BBbsHHssHHsbBB.
+.bBbSSSSSSRSbBb.
+.bBbSSSssSSSbBb.
+.bBBbZZZZZZbBBb.
 .bbBBBBGGBBBBbb.
 .bBBBtTTTTtBBBb.
 bBBBBtTTTTtBBBBb
-bBBBBKKGKKKBBBBb
+bBbBBKKGKKKBBbBb
 bBBBBtTTTTtBBBBb
-bbBBBttTTttBBBbb
-.bBbBtt..ttBbBb.
-..b.b.t..t.b.b..
+bbBBBttTTttBBbbb
+.b.bBtt..ttBb.b.
+....b.t..t.b....
 """
 
 BACK = """
@@ -87,22 +88,22 @@ SIDE = """
 ...BBBBBBBB.....
 ..BBLLBBBBBB....
 .BBLBBBBBBBBB...
-.BBBBBBBBHHHBB..
-.BBBBBBBHHHHHB..
-.BBBBBBHHSSSSB..
-.BBBBBBHSSSHSSB.
-.bBBBBBBSSSHSS..
-.bBBBBBBsSSSSS..
-.bBBBBBBBsSSS...
+.BBBBBBBBBBBBB..
+.BBBBBBBbbbbbB..
+.BBBBBBbHHssb...
+.BBBBBBbHsHHs...
+.bBBBBBBbSSSSs..
+.bBBBBBBbSSsS...
+.bBBBBBBBZZZ....
 ..bBBBBBBBBGB...
 ..bBBBBBBBBBB...
 .bBBBBBBBtTTB...
 .bBBBBBBBtTTB...
 .bBBBBBBKKGKB...
-.bBBBBBBBtTTB...
+.bBbBBBBBtTTB...
 bbBBBBBBBttTb...
-b.bBbBBbBtt.b...
-..b..b.b.t......
+b.bBbB.bBtt.b...
+..b....b.t......
 """
 
 LEGS_FRONT = [
