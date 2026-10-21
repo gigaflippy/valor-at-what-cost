@@ -53,7 +53,8 @@ struct Game {
 
     Sfx sShoot, sShotgun, sRail, sEShoot, sHit, sDie, sHurt, sBlank, sPickup, sRoll, sDoor, sChest, sEmpty, sBoom;
 
-    const Theme& theme() const { return THEMES[std::clamp(floor - 1, 0, FINAL_FLOOR - 1)]; }
+    const Theme& theme() const { return content().floors[std::clamp(floor - 1, 0, content().floorCount() - 1)]; }
+    const EnemyDef& def(const Enemy& e) const { return content().enemies[e.def]; }
 
     // ------------------------------------------------------------ lifecycle
     void init();
@@ -77,7 +78,7 @@ struct Game {
     void debugKeys();
 
     Gun& gun() { return pl.guns[pl.cur]; }
-    const GunDef& gunDef() { return GUNS[gun().def]; }
+    const GunDef& gunDef() { return content().guns[gun().def]; }
 
     void updatePlayer(float dt);
 
@@ -100,8 +101,9 @@ struct Game {
 
     void roomCleared();
 
-    Enemy makeEnemy(EType t, Vector2 p);
+    Enemy makeEnemy(int defIndex, Vector2 p);
 
+    int pickEnemy();
     void spawnWave();
 
     void spawnBoss();
@@ -125,7 +127,7 @@ struct Game {
     void updateParticles(float dt);
 
     // ============================================================ DRAWING
-    static Color enemyColor(const Enemy& e);
+    Color enemyColor(const Enemy& e) const;
     static Color pickupColor(PickType t);
 
     void draw();

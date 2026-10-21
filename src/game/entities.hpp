@@ -9,7 +9,8 @@
 
 namespace valor {
 
-enum class EType { Grunt, Scatter, Whirl, Warden };
+enum class EType { Shooter, Spinner, Warden };          // behaviour (AI)
+enum class Shape { Round, Square, Hexagon, Warden };    // how it is drawn
 enum class PickType { Heart, Ammo, Blank };
 
 struct Gun { int def; int mag; int ammo; };
@@ -17,7 +18,7 @@ struct Gun { int def; int mag; int ammo; };
 struct Player {
     Vector2 pos{};
     float r = 13.0f;
-    int hp = 6, maxHp = 6;          // half-hearts
+    int hp = 6, maxHp = 6;          // half-hearts (set from rules.json)
     int blanks = 2;
     float rollT = 0, rollCd = 0, invuln = 0;
     Vector2 rollDir{1, 0};
@@ -39,7 +40,9 @@ struct Bullet {
 };
 
 struct Enemy {
-    EType type = EType::Grunt;
+    int def = 0;                    // index into content().enemies
+    EType type = EType::Shooter;
+    Shape shape = Shape::Round;
     Vector2 pos{};
     float r = 15, hp = 10, maxHp = 10, speed = 80;
     float shootT = 1, spawnT = 0.9f, flash = 0, moveT = 0;

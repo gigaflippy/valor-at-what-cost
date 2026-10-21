@@ -31,6 +31,27 @@ int main(int argc, char** argv) {
     SetTargetFPS(144);
     HideCursor();
 
+    // Load guns, enemies, floors and rules from data/. If anything is wrong,
+    // show the exact problem instead of starting with broken content.
+    std::string dataError;
+    if (!loadContent(dataError)) {
+        TraceLog(LOG_ERROR, "DATA: %s", dataError.c_str());
+        ShowCursor();
+        while (!WindowShouldClose() && !IsKeyPressed(KEY_ESCAPE)) {
+            BeginDrawing();
+            ClearBackground({20, 12, 14, 255});
+            DrawText("Could not load game data", 40, 40, 32, {255, 110, 110, 255});
+            DrawText(dataError.c_str(), 40, 96, 20, RAYWHITE);
+            DrawText("Fix the file and restart the game. ESC to quit.", 40, 150, 18, GRAY);
+            EndDrawing();
+        }
+        CloseAudioDevice();
+        CloseWindow();
+        return 1;
+    }
+    TraceLog(LOG_INFO, "DATA: loaded %d guns, %d enemies, %d floors from %s", (int)content().guns.size(),
+             (int)content().enemies.size(), content().floorCount(), content().dir.c_str());
+
     static Game game;               // large object; keep it off the stack
     game.init();
     for (int i = 1; i < argc; i++)

@@ -1,0 +1,10 @@
+{
+  "_comment": "One entry per floor, in order. The number of entries is the number of floors in a run.",
+  "floors": [
+    { "name": "The Breach Halls",   "floorA": "#2E2C38", "floorB": "#32303D", "wall": "#3E384A", "wallTop": "#6C647E", "accent": "#FFC85A", "background": "#0E0D12" },
+    { "name": "The Rusted Gutters", "floorA": "#222E2A", "floorB": "#26332E", "wall": "#30423A", "wallTop": "#587666", "accent": "#96FFAA", "background": "#0A0F0D" },
+    { "name": "The Cinder Mines",   "floorA": "#342A22", "floorB": "#392E25", "wall": "#4C3C2E", "wallTop": "#826A52", "accent": "#FFAA5A", "background": "#100C09" },
+    { "name": "The Hollow Forge",   "floorA": "#382020", "floorB": "#3E2423", "wall": "#542C28", "wallTop": "#945044", "accent": "#FF7850", "background": "#120808" },
+    { "name": "The Gunmetal Abyss", "floorA": "#1C1E34", "floorB": "#20223A", "wall": "#2E2C56", "wallTop": "#5A5694", "accent": "#AA96FF", "background": "#080812" }
+  ]
+}

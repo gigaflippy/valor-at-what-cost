@@ -9,14 +9,8 @@
 
 namespace valor {
 
-Color Game::enemyColor(const Enemy& e) {
-    switch (e.type) {
-        case EType::Grunt:   return {214, 172, 96, 255};
-        case EType::Scatter: return {226, 104, 70, 255};
-        case EType::Whirl:   return {168, 110, 230, 255};
-        case EType::Warden:  return e.enraged ? Color{220, 60, 70, 255} : Color{150, 160, 180, 255};
-    }
-    return WHITE;
+Color Game::enemyColor(const Enemy& e) const {
+    return e.enraged ? def(e).enragedColor : def(e).color;
 }
 
 Color Game::pickupColor(PickType t) {
@@ -154,7 +148,7 @@ void Game::drawPickup(const Pickup& p) {
 void Game::drawEnemy(const Enemy& e) {
     Color base = enemyColor(e);
     if (e.spawnT > 0) {
-        float k = e.spawnT / (e.type == EType::Warden ? 1.4f : 0.9f);
+        float k = e.spawnT / def(e).spawnDelay;
         DrawCircleLinesV(e.pos, e.r + k * 34, Fade(theme().accent, 1.0f - k));
         DrawCircleV(e.pos, e.r * (1.0f - k), Fade(base, 0.5f));
         return;
@@ -172,26 +166,26 @@ void Game::drawEnemy(const Enemy& e) {
         }
     };
 
-    switch (e.type) {
-        case EType::Grunt:
+    switch (e.shape) {
+        case Shape::Round:
             DrawRectanglePro({e.pos.x, e.pos.y, 22, 6}, {-6, 3}, aimA * RAD2DEG, {50, 48, 56, 255});
             DrawCircleV(e.pos, e.r, c);
             DrawCircleV({e.pos.x, e.pos.y - e.r * 0.35f}, e.r * 0.55f, mix(c, WHITE, 0.15f));
             eyes(5, 3.5f);
             break;
-        case EType::Scatter:
+        case Shape::Square:
             DrawRectanglePro({e.pos.x, e.pos.y, 26, 10}, {-6, 5}, aimA * RAD2DEG, {60, 50, 46, 255});
             DrawRectangleRounded({e.pos.x - e.r, e.pos.y - e.r, e.r * 2, e.r * 2}, 0.35f, 6, c);
             DrawRectangle((int)(e.pos.x - e.r), (int)(e.pos.y + e.r * 0.2f), (int)(e.r * 2), 4, Fade(BLACK, 0.25f));
             eyes(6, 4);
             break;
-        case EType::Whirl:
+        case Shape::Hexagon:
             DrawPoly(e.pos, 6, e.r * 1.15f, e.spin * RAD2DEG, c);
             DrawPoly(e.pos, 6, e.r * 0.7f, -e.spin * RAD2DEG, mix(c, BLACK, 0.3f));
             DrawCircleV(e.pos, 5, RAYWHITE);
             DrawCircleV(Vector2Add(e.pos, fromAngle(aimA, 2)), 2.5f, {20, 16, 24, 255});
             break;
-        case EType::Warden: {
+        case Shape::Warden: {
             for (int k = 0; k < 8; k++) {
                 float a = e.spin + k * PI / 4;
                 DrawPoly(Vector2Add(e.pos, fromAngle(a, e.r + 6)), 3, 11, a * RAD2DEG, mix(c, BLACK, 0.25f));
@@ -207,8 +201,8 @@ void Game::drawEnemy(const Enemy& e) {
     }
 
     // Wind-up tell before a shot
-    bool tell = (e.type == EType::Grunt || e.type == EType::Scatter) ? e.shootT < 0.3f
-              : e.type == EType::Whirl ? (e.burstT <= 0 && e.shootT < 0.4f) : false;
+    bool tell = e.type == EType::Shooter ? e.shootT < 0.3f
+              : e.type == EType::Spinner ? (e.burstT <= 0 && e.shootT < 0.4f) : false;
     if (tell) textCentered("!", (int)e.pos.x, (int)(e.pos.y - e.r - 26), 22, {255, 230, 90, 255});
 
     if (e.type != EType::Warden && e.hp < e.maxHp) {
@@ -225,7 +219,7 @@ void Game::drawPlayer() {
 
     Color cloak{70, 150, 220, 255}, face{240, 228, 205, 255};
     if (rolling) {
-        float k = 1.0f - pl.rollT / ROLL_TIME;
+        float k = 1.0f - pl.rollT / content().rules.rollTime;
         for (int i = 1; i <= 3; i++)
             DrawCircleV(Vector2Subtract(pl.pos, Vector2Scale(pl.rollDir, i * 9.0f)), pl.r * 0.9f, Fade(cloak, 0.18f * (4 - i)));
         float squash = 0.75f + 0.25f * fabsf(cosf(k * PI * 2));
@@ -234,7 +228,7 @@ void Game::drawPlayer() {
     }
 
     const GunDef& d = gunDef();
-    float gunLen = d.pellets > 1 ? 24.0f : d.pierce ? 30.0f : d.fireDelay < 0.1f ? 22.0f : 18.0f;
+    float gunLen = d.length;
     bool behind = sinf(pl.aim) < -0.2f;   // aiming up: gun is drawn behind the body
     auto drawGun = [&] {
         float back = pl.recoil * 4;

@@ -10,12 +10,12 @@
 namespace valor {
 
 void Game::enemyShot(Vector2 from, float ang, float speed, float r, float splitT) {
-    spawnBullet(Vector2Add(from, fromAngle(ang, 10)), ang, speed, r, 1, false, false, ENEMY_BULLET, splitT);
+    spawnBullet(Vector2Add(from, fromAngle(ang, 10)), ang, speed, r, 1, false, false, content().rules.enemyBullet, splitT);
     if (eShotSfxT <= 0) { sEShoot.play(frand(0.9f, 1.1f), 0.7f); eShotSfxT = 0.06f; }
 }
 
 void Game::updateEnemies(float dt) {
-    const float diff = 1.0f + 0.15f * (floor - 1);
+    const float diff = 1.0f + content().rules.fireRatePerFloor * (floor - 1);
     for (auto& e : enemies) {
         if (!e.alive) continue;
         e.flash = std::max(0.0f, e.flash - dt * 6.0f);
@@ -28,47 +28,43 @@ void Game::updateEnemies(float dt) {
         Vector2 mv{0, 0};
         e.moveT -= dt;
 
+        const EnemyDef& d = def(e);
         switch (e.type) {
-            case EType::Grunt: {
-                if (e.moveT <= 0) {
-                    e.moveT = frand(0.8f, 1.6f);
+            // Keeps between keepNear and keepFar from the player, strafing in between,
+            // and fires a fan of `count` bullets (count 1 = single aimed shot).
+            case EType::Shooter: {
+                if (d.strafeSpeed > 0 && e.moveT <= 0) {
+                    e.moveT = frand(d.strafeMin, d.strafeMax);
                     e.dir = chance(0.5f) ? Vector2{-dirP.y, dirP.x} : Vector2{dirP.y, -dirP.x};
                 }
-                if (dist > 280) mv = dirP;
-                else if (dist < 170) mv = Vector2Scale(dirP, -1);
-                else mv = Vector2Scale(e.dir, 0.7f);
+                if (dist > d.keepFar) mv = dirP;
+                else if (dist < d.keepNear) mv = Vector2Scale(dirP, -1);
+                else mv = Vector2Scale(e.dir, d.strafeSpeed);
                 e.shootT -= dt * diff;
                 if (e.shootT <= 0) {
-                    e.shootT = frand(1.3f, 1.9f);
-                    enemyShot(e.pos, aimA + frand(-0.06f, 0.06f), 250, 7);
+                    e.shootT = frand(d.fireMin, d.fireMax);
+                    float jitter = d.aimJitter > 0 ? frand(-d.aimJitter, d.aimJitter) : 0.0f;
+                    for (int k = 0; k < d.count; k++)
+                        enemyShot(e.pos, aimA + (k - (d.count - 1) / 2.0f) * d.spreadStep + jitter, d.bulletSpeed, d.bulletRadius);
                 }
             } break;
 
-            case EType::Scatter: {
-                if (dist > 210) mv = dirP;
-                else if (dist < 130) mv = Vector2Scale(dirP, -1);
-                e.shootT -= dt * diff;
-                if (e.shootT <= 0) {
-                    e.shootT = frand(2.1f, 2.7f);
-                    for (int k = -2; k <= 2; k++) enemyShot(e.pos, aimA + k * 0.22f, 215, 8);
-                }
-            } break;
-
-            case EType::Whirl: {
-                if (e.moveT <= 0) { e.moveT = frand(1.5f, 2.5f); e.dir = fromAngle(frand(0, 2 * PI)); }
-                mv = Vector2Scale(e.dir, 0.6f);
+            // Wanders, then fires a rotating burst of `arms` streams.
+            case EType::Spinner: {
+                if (e.moveT <= 0) { e.moveT = frand(d.wanderMin, d.wanderMax); e.dir = fromAngle(frand(0, 2 * PI)); }
+                mv = Vector2Scale(e.dir, d.wanderSpeed);
                 if (e.burstT > 0) {
                     e.burstT -= dt;
                     e.tick -= dt;
                     if (e.tick <= 0) {
-                        e.tick = 0.11f;
-                        for (int k = 0; k < 4; k++) enemyShot(e.pos, e.ang + k * PI / 2, 175, 7);
-                        e.ang += 0.27f;
+                        e.tick = d.burstTick;
+                        for (int k = 0; k < d.arms; k++) enemyShot(e.pos, e.ang + k * 2 * PI / d.arms, d.bulletSpeed, d.bulletRadius);
+                        e.ang += d.burstTurn;
                     }
-                    if (e.burstT <= 0) e.shootT = frand(1.8f, 2.4f);
+                    if (e.burstT <= 0) e.shootT = frand(d.fireMin, d.fireMax);
                 } else {
                     e.shootT -= dt * diff;
-                    if (e.shootT <= 0) { e.burstT = 1.6f; e.tick = 0; }
+                    if (e.shootT <= 0) { e.burstT = d.burstTime; e.tick = 0; }
                 }
                 e.spin += dt * (e.burstT > 0 ? 9.0f : 1.5f);
             } break;
@@ -90,12 +86,12 @@ void Game::updateEnemies(float dt) {
 }
 
 void Game::updateBoss(Enemy& e, float dt, float aimA, Vector2& mv) {
-    const float diff = sqrtf(1.0f + 0.15f * (floor - 1));
+    const float diff = sqrtf(1.0f + content().rules.fireRatePerFloor * (floor - 1));
     Vector2 c = dun.roomCenter(curRoom);
 
-    if (!e.enraged && e.hp < e.maxHp * 0.5f) {
+    if (!e.enraged && e.hp < e.maxHp * def(e).enrageAt) {
         e.enraged = true;
-        showBanner("THE WARDEN IS ENRAGED", 1.8f);
+        showBanner(upper(def(e).name) + " IS ENRAGED", 1.8f);
         shake += 0.6f;
         sBoom.play(1.3f);
         for (int k = 0; k < 36; k++) enemyShot(e.pos, k * 2 * PI / 36, 160, 8);
@@ -188,14 +184,14 @@ void Game::damageEnemy(Enemy& e, float dmg, Vector2 vel) {
         burst(e.pos, 22, enemyColor(e), 60, 280, 0.5f, 5);
         sDie.play(frand(0.9f, 1.2f));
         shake += 0.1f;
-        if (chance(0.06f)) pickups.push_back({e.pos, PickType::Ammo});
+        if (chance(content().rules.enemyAmmoDrop)) pickups.push_back({e.pos, PickType::Ammo});
     }
 }
 
 void Game::hurtPlayer() {
-    if (pl.invuln > 0 || pl.rollT > ROLL_IFRAME_END || god) return;
+    if (pl.invuln > 0 || pl.rollT > content().rules.rollIframeEnd || god) return;
     pl.hp--;
-    pl.invuln = HIT_INVULN;
+    pl.invuln = content().rules.hitInvuln;
     hurtFlash = 1.0f;
     shake += 0.5f;
     sHurt.play();
