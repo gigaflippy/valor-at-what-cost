@@ -1,0 +1,110 @@
+<div align="center">
+
+# Valor at What Cost
+
+**A top-down bullet-hell roguelike, written from scratch in C++.**
+
+*Created by **Georgi** ([@gigaflippy](https://github.com/gigaflippy))*
+
+![Title screen](screenshots/title.png)
+
+</div>
+
+## About the game
+
+Five floors down. Every room locks behind you. Every enemy fills the air with bullets.
+
+You are a lone gunner descending through a dungeon that rebuilds itself every run. Roll through bullet patterns, use your rare blanks to wipe the screen clean, loot new guns from hidden chests, and face **the Warden**, a spiked sentinel guarding the hatch at the bottom of each floor. Reach the bottom of floor five and you escape. Die, and you start again from the top.
+
+**Highlights**
+
+- **Every run is different.** Each floor is generated fresh: a branching layout of rooms with the boss at the deepest dead end.
+- **Readable bullet-hell combat.** Enemies flash a warning before they fire, and your hitbox is smaller than your sprite. You dodge with skill, not luck.
+- **A boss with two phases.** The Warden fires rings, spirals and aimed fans, then turns red below half health and starts lobbing mortars that burst into rings.
+- **Four guns:** a trusty sidearm with infinite ammo, a shotgun, a rivet SMG, and a piercing railgun.
+- **Five themed floors**, from the Breach Halls down to the Gunmetal Abyss, each harder than the last.
+- **No asset files at all.** Every shape is drawn and every sound is synthesised in code at startup.
+
+| Combat | The Warden | Floor 2 |
+|---|---|---|
+| ![Combat](screenshots/combat.png) | ![Boss fight](screenshots/boss.png) | ![Floor 2](screenshots/floor2.png) |
+
+**Tech:** C++17 · raylib 5.5 · CMake · ~1,550 lines, single source file
+
+## Build
+
+You need a C++17 compiler, CMake 3.16+ and git. raylib 5.5 is downloaded and built automatically on first configure.
+
+**Linux (Debian/Ubuntu)**: install the X11/OpenGL headers once:
+
+```bash
+sudo apt install build-essential cmake git libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev
+```
+
+Then, on any platform:
+
+```bash
+cmake -S . -B build
+cmake --build build -j
+./build/valor          # Windows: build\Release\valor.exe
+```
+
+## Controls
+
+| Input | Action |
+|---|---|
+| WASD / arrows | Move |
+| Mouse | Aim |
+| Left mouse | Shoot (hold for automatic guns) |
+| Space / right mouse | Dodge roll: invincible for most of the roll |
+| Q | Blank: wipes every enemy bullet on screen (2 per floor, more from drops) |
+| R | Reload |
+| E | Open chest / descend through the hatch |
+| Wheel / 1-4 | Switch guns |
+| Esc / P | Pause |
+
+## How a run works
+
+- Each floor is a procedurally grown tree of rooms. The boss is always at the deepest dead end; a chest room holds a new gun.
+- Entering a combat room locks the doors until every wave is dead. Clearing a room can drop a heart, ammo or a blank.
+- Enemies flash a yellow **!** just before they fire.
+- Your hitbox is smaller than your sprite, as in most bullet-hells.
+- After the Warden falls, step on the hatch and press E. Each floor is harder (more rooms, more HP, faster fire) and has its own palette.
+
+**Enemies:** Grunt (aimed single shots, strafes), Scatter (5-bullet fans), Whirl (spinning 4-arm bursts, from floor 2), and the Warden: rings, spirals, aimed fans, and splitting mortars once enraged below 50% HP.
+
+**Guns:** Rusty Sidearm (infinite), Scattergun, Riveter (SMG), Railspike (piercing).
+
+## Debug mode
+
+`./build/valor --debug` enables:
+
+- **F1**: god mode
+- **F2**: kill everything in the room
+- **F3**: teleport to the boss room
+
+## Code tour (`src/main.cpp`)
+
+| Section | What's there |
+|---|---|
+| `GUNS[]`, `THEMES[]` | Tuning tables: change numbers here to rebalance |
+| `generateFloor()` | Room tree growth, boss/chest placement, tile carving, pillars |
+| `updateRooms()` | Door locking, wave spawning, room-clear rewards |
+| `updateEnemies()` / `updateBoss()` | Enemy AI and bullet patterns |
+| `updateBullets()` | Movement, wall hits, damage, splitting mortars |
+| `synthWave()` / `Sfx` | Procedural sound effects |
+| `draw*()` | All rendering, HUD and minimap |
+
+## Ideas for next steps
+
+- Split `main.cpp` into modules (`dungeon`, `entities`, `render`, `audio`)
+- Shop rooms and a currency drop
+- Active items and passive upgrades
+- Sprite sheets instead of primitive shapes
+- Gamepad support (raylib has it built in)
+
+## Author
+
+Designed and developed by **Georgi** ([@gigaflippy](https://github.com/gigaflippy)).
+
+© 2026 Georgi. All rights reserved. See [LICENSE](LICENSE).
