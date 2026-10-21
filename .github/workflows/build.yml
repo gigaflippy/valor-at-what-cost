@@ -1,0 +1,51 @@
+name: Build
+
+# Builds the game on Linux and Windows for every push and pull request, and
+# uploads a ready-to-play folder for each platform (Actions tab > a run > Artifacts).
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libgl1-mesa-dev
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel 4
+
+      - name: Package
+        shell: bash
+        run: |
+          mkdir -p dist
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            cp build/Release/valor.exe dist/
+            cp -r build/Release/data dist/
+          else
+            cp build/valor dist/
+            cp -r build/data dist/
+          fi
+          cp README.md LICENSE dist/
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: valor-${{ runner.os }}
+          path: dist
