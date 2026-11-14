@@ -61,4 +61,12 @@ struct Enemy {
 struct Particle { Vector2 pos, vel; float life, maxLife, size; Color col; float drag = 4.0f; };
 struct Pickup   { Vector2 pos; PickType type; float t = 0; bool alive = true; };
 
+// Small things that fly, bounce and then stay on the floor for the rest of the floor
+enum class DebrisKind : unsigned char { Casing, Shard, Bit, Stain };
+struct Debris { Vector2 pos, vel; float z, vz; Color col; DebrisKind kind; bool rest; };
+
+// Breakable decoration. Props do not block movement: a touch or a bullet breaks them.
+enum class PropKind : unsigned char { Pot, Crate };
+struct Prop { Vector2 pos; PropKind kind; bool alive = true; };
+
 }  // namespace valor

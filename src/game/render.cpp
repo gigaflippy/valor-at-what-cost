@@ -49,6 +49,18 @@ void oPoly(Vector2 c, int sides, float rad, float rotDeg, Color col, int pass) {
 }
 void shadow(Vector2 feet, float w) { DrawEllipse((int)feet.x, (int)feet.y, w, w * 0.38f, Fade(BLACK, 0.38f)); }
 
+// Draws part of a sprite sheet centred on `c`, snapped to the pixel grid. Pass 0 draws
+// the 1-pixel outline (the sprite four times, shifted, in the outline colour).
+void drawSprite(const Texture2D& tex, Rectangle src, Vector2 c, float w, float h, Color tint, int pass, float rotDeg = 0) {
+    c = {roundf(c.x / PX) * PX, roundf(c.y / PX) * PX};
+    if (pass == 0) {
+        const Vector2 offs[4] = {{-OL, 0}, {OL, 0}, {0, -OL}, {0, OL}};
+        for (Vector2 o : offs) DrawTexturePro(tex, src, {c.x + o.x, c.y + o.y, w, h}, {w / 2, h / 2}, rotDeg, OUTLINE);
+    } else {
+        DrawTexturePro(tex, src, {c.x, c.y, w, h}, {w / 2, h / 2}, rotDeg, tint);
+    }
+}
+
 bool isBlock(const Dungeon& d, int x, int y) {
     Tile t = d.tileAt(x, y);
     if (t == Tile::Wall || t == Tile::Pillar) return true;
@@ -104,6 +116,13 @@ void Game::initGraphics() {
     } else {
         TraceLog(LOG_WARNING, "SPRITE: %s not found, drawing the player with shapes", sheet.c_str());
     }
+    sheet = content().dir + "/sprites/enemies.png";
+    if (FileExists(sheet.c_str())) {
+        enemySprite = LoadTexture(sheet.c_str());
+        SetTextureFilter(enemySprite, TEXTURE_FILTER_POINT);
+    } else {
+        TraceLog(LOG_WARNING, "SPRITE: %s not found, drawing enemies with shapes", sheet.c_str());
+    }
     gfxReady = true;
 }
 
@@ -113,6 +132,7 @@ void Game::unloadGraphics() {
     UnloadRenderTexture(lightMap);
     UnloadTexture(lightTex);
     if (playerSprite.id != 0) UnloadTexture(playerSprite);
+    if (enemySprite.id != 0) UnloadTexture(enemySprite);
     gfxReady = false;
 }
 
@@ -212,6 +232,7 @@ void Game::draw() {
     ClearBackground(th.bg);
     BeginMode2D(view);
     drawFloor(x0, y0, x1, y1);
+    drawDebris();
     drawWorldSorted(x0, y0, x1, y1);
     EndMode2D();
     EndTextureMode();
@@ -239,6 +260,7 @@ void Game::draw() {
     // 5. Crisp screen-resolution layer: prompts, HUD, menus
     drawPrompts();
     drawHUD();
+    if (fadeT > 0) DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, fadeT));
     if (state == State::Paused) drawOverlay("PAUSED", "ESC - resume     X - quit to title", th.accent);
     if (state == State::Dead)   drawOverlay("YOU DIED", "R - try again     ESC - title", {255, 90, 90, 255});
     if (state == State::Won)    drawOverlay("YOU ESCAPED THE DEPTHS", "R - play again     ESC - title", th.accent);
@@ -275,6 +297,23 @@ void Game::drawFloor(int x0, int y0, int x1, int y1) {
                 DrawRectangleRec({fx, fy + 3 * PX, TILE, 2 * PX}, Fade(BLACK, 0.15f));
             }
         }
+
+    // A rug in the start room and the chest room
+    for (int i = 0; i < (int)dun.rooms.size(); i++) {
+        RoomType rt = dun.rooms[i].type;
+        if (rt != RoomType::Start && rt != RoomType::Chest) continue;
+        Vector2 c = dun.roomCenter(i);
+        if (fabsf(c.x - cam.target.x) > 900 || fabsf(c.y - cam.target.y) > 600) continue;
+        Rectangle rug{c.x - 3.5f * TILE, c.y - 2.5f * TILE, 7 * TILE, 5 * TILE};
+        Color body = mix(th.accent, th.floorA, 0.88f), edge = mix(mix(th.accent, th.floorA, 0.6f), BLACK, 0.35f);
+        DrawRectangleRec(rug, edge);
+        DrawRectangleRec({rug.x + 2 * PX, rug.y + 2 * PX, rug.width - 4 * PX, rug.height - 4 * PX}, body);
+        DrawRectangleLinesEx({rug.x + 5 * PX, rug.y + 5 * PX, rug.width - 10 * PX, rug.height - 10 * PX}, PX, mix(body, th.accent, 0.35f));
+        for (float x = rug.x + PX; x < rug.x + rug.width - PX; x += 3 * PX) {   // fringe
+            DrawRectangleRec({x, rug.y - PX, PX, PX}, edge);
+            DrawRectangleRec({x, rug.y + rug.height, PX, PX}, edge);
+        }
+    }
 
     // Hatch to the next floor sits flat on the floor
     if (hatchActive) {
@@ -354,9 +393,11 @@ void Game::drawWallTile(int x, int y) {
 // whose feet are in that row. Actors north of a wall or pillar are therefore
 // covered by its raised cap; actors south of it stand in front of its face.
 void Game::drawWorldSorted(int x0, int y0, int x1, int y1) {
-    struct Item { float feet; int kind; int idx; };   // kind: 0 player, 1 enemy, 2 pickup, 3 chest
+    struct Item { float feet; int kind; int idx; };   // kind: 0 player, 1 enemy, 2 pickup, 3 chest, 4 prop
     std::vector<Item> items;
-    if (state != State::Dead) items.push_back({pl.pos.y + pl.r, 0, 0});
+    items.push_back({pl.pos.y + pl.r, 0, 0});
+    for (int i = 0; i < (int)props.size(); i++)
+        if (fabsf(props[i].pos.x - cam.target.x) < 700 && fabsf(props[i].pos.y - cam.target.y) < 450) items.push_back({props[i].pos.y, 4, i});
     for (int i = 0; i < (int)enemies.size(); i++) items.push_back({enemies[i].pos.y + enemies[i].r, 1, i});
     for (int i = 0; i < (int)pickups.size(); i++) items.push_back({pickups[i].pos.y + 12, 2, i});
     for (int i = 0; i < (int)dun.rooms.size(); i++)
@@ -370,6 +411,7 @@ void Game::drawWorldSorted(int x0, int y0, int x1, int y1) {
                 case 1: drawEnemy(enemies[it.idx], pass); break;
                 case 2: drawPickup(pickups[it.idx], pass); break;
                 case 3: drawChest(it.idx, pass); break;
+                case 4: drawProp(props[it.idx], pass); break;
             }
         }
     };
@@ -410,9 +452,7 @@ void Game::drawPickup(const Pickup& p, int pass) {
     Color c = pickupColor(p.type);
     switch (p.type) {
         case PickType::Heart:
-            if (pass == 0) { DrawCircleV({pos.x - 5, pos.y - 3}, 8.5f, OUTLINE); DrawCircleV({pos.x + 5, pos.y - 3}, 8.5f, OUTLINE);
-                             DrawTriangle({pos.x - 13.5f, pos.y - 1}, {pos.x, pos.y + 14}, {pos.x + 13.5f, pos.y - 1}, OUTLINE); }
-            else drawHeart(pos.x, pos.y - 3, 0.7f, 2);
+            if (pass == 1) drawHeart(pos.x, pos.y, PX, 2);
             break;
         case PickType::Ammo:
             oRect({pos.x - 10, pos.y - 8, 20, 15}, {92, 98, 62, 255}, pass);
@@ -439,11 +479,17 @@ void Game::drawEnemy(const Enemy& e, int pass) {
     float aimA = angleTo(e.pos, pl.pos);
     if (pass == 1) shadow({e.pos.x, e.pos.y + e.r * 0.85f}, e.r);
 
+    // Body sprites bob up and down; each enemy is out of step with the others
+    const bool sprite = enemySprite.id != 0;
+    const int bob = sprite && fmodf(titleT * 2.5f + e.ang, 1.0f) > 0.5f ? 1 : 0;
+    auto body = [&](int row) {
+        drawSprite(enemySprite, {bob * 16.0f, row * 16.0f, 16, 16}, e.pos, 16 * PX, 16 * PX, c, pass);
+    };
     auto eyes = [&](float spacing) {
         if (pass == 0) return;
         Vector2 fwd = fromAngle(aimA, e.r * 0.3f);
         for (int s = -1; s <= 1; s += 2) {
-            Vector2 ep{e.pos.x + fwd.x + s * spacing, e.pos.y + fwd.y - e.r * 0.2f};
+            Vector2 ep{e.pos.x + fwd.x + s * spacing, e.pos.y + fwd.y - e.r * 0.2f + bob * PX};
             DrawRectangleRec({ep.x - PX, ep.y - PX, 2 * PX, 2 * PX}, RAYWHITE);
             DrawRectangleRec({ep.x - PX + (cosf(aimA) > 0 ? PX : 0), ep.y - PX + (sinf(aimA) > 0 ? PX : 0), PX, PX}, OUTLINE);
         }
@@ -452,16 +498,22 @@ void Game::drawEnemy(const Enemy& e, int pass) {
     switch (e.shape) {
         case Shape::Round:
             oBar(e.pos, -2, 18, 6, aimA * RAD2DEG, {58, 56, 64, 255}, pass);
-            oCircle(e.pos, e.r, c, pass);
-            if (pass == 1) DrawCircleV({e.pos.x - e.r * 0.3f, e.pos.y - e.r * 0.4f}, e.r * 0.35f, mix(c, WHITE, 0.25f));
+            if (sprite) body(0);
+            else {
+                oCircle(e.pos, e.r, c, pass);
+                if (pass == 1) DrawCircleV({e.pos.x - e.r * 0.3f, e.pos.y - e.r * 0.4f}, e.r * 0.35f, mix(c, WHITE, 0.25f));
+            }
             eyes(5);
             break;
         case Shape::Square:
             oBar(e.pos, -2, 22, 9, aimA * RAD2DEG, {66, 56, 52, 255}, pass);
-            oRect({e.pos.x - e.r, e.pos.y - e.r, e.r * 2, e.r * 2}, c, pass);
-            if (pass == 1) {
-                DrawRectangleRec({e.pos.x - e.r, e.pos.y - e.r, e.r * 2, PX}, mix(c, WHITE, 0.3f));
-                DrawRectangleRec({e.pos.x - e.r, e.pos.y + e.r * 0.3f, e.r * 2, 2 * PX}, mix(c, BLACK, 0.3f));
+            if (sprite) body(1);
+            else {
+                oRect({e.pos.x - e.r, e.pos.y - e.r, e.r * 2, e.r * 2}, c, pass);
+                if (pass == 1) {
+                    DrawRectangleRec({e.pos.x - e.r, e.pos.y - e.r, e.r * 2, PX}, mix(c, WHITE, 0.3f));
+                    DrawRectangleRec({e.pos.x - e.r, e.pos.y + e.r * 0.3f, e.r * 2, 2 * PX}, mix(c, BLACK, 0.3f));
+                }
             }
             eyes(6);
             break;
@@ -506,24 +558,41 @@ void Game::drawEnemy(const Enemy& e, int pass) {
 }
 
 void Game::drawPlayer(int pass) {
-    if (pl.invuln > 0 && fmodf(titleT, 0.12f) < 0.06f) return;   // i-frame flicker
+    const bool dead = state == State::Dead;
+    if (!dead && pl.invuln > 0 && fmodf(titleT, 0.12f) < 0.06f) return;   // i-frame flicker
     // The Deserter's palette, from docs/concept/deserter-sheet.png
     const Color cloak{53, 70, 103, 255}, cloakDark{38, 50, 77, 255}, face{201, 151, 111, 255}, gold{194, 149, 72, 255};
     const bool sprite = playerSprite.id != 0;
     const float feet = pl.pos.y + pl.r;
+    const float SW = 16 * PX, SH = 24 * PX;      // sprite frame size in world units
+
+    if (dead) {   // lying on his side where he fell
+        if (!sprite) return;
+        if (pass == 1) shadow({pl.pos.x, feet}, pl.r * 1.5f);
+        drawSprite(playerSprite, {0, 48, 16, 24}, {pl.pos.x, feet - 7 * PX}, SW, SH, {170, 165, 185, 255}, pass, 90);
+        return;
+    }
     if (pass == 1) shadow({pl.pos.x, pl.pos.y + pl.r * 0.9f}, pl.r);
 
     if (pl.rollT > 0) {
         float k = 1.0f - pl.rollT / content().rules.rollTime;
-        if (pass == 1)
-            for (int i = 1; i <= 3; i++)
-                DrawCircleV(Vector2Subtract(pl.pos, Vector2Scale(pl.rollDir, i * 9.0f)), pl.r * 0.9f, Fade(cloak, 0.22f * (4 - i)));
-        float squash = 0.75f + 0.25f * fabsf(cosf(k * PI * 2));
-        float rx = pl.r * (2 - squash) * 1.1f, ry = pl.r * squash * 1.1f;
-        if (pass == 0) DrawEllipse((int)pl.pos.x, (int)pl.pos.y, rx + OL, ry + OL, OUTLINE);
-        else {
-            DrawEllipse((int)pl.pos.x, (int)pl.pos.y, rx, ry, cloak);
-            DrawEllipse((int)pl.pos.x, (int)(pl.pos.y - ry * 0.3f), rx * 0.5f, ry * 0.35f, mix(cloak, WHITE, 0.15f));
+        if (sprite) {   // a full tumble in the direction of the roll, with two afterimages
+            float dir = pl.rollDir.x >= 0 ? 1.0f : -1.0f;
+            Rectangle src{0, 48, dir * 16, 24};
+            Vector2 c{pl.pos.x, feet - 10 * PX - sinf(k * PI) * 4 * PX};
+            if (pass == 1)
+                for (int i = 2; i >= 1; i--)
+                    drawSprite(playerSprite, src, Vector2Subtract(c, Vector2Scale(pl.rollDir, i * 11.0f)), SW, SH,
+                               Fade(WHITE, 0.3f / i), 1, dir * (k * 360 - i * 40));
+            drawSprite(playerSprite, src, c, SW, SH, WHITE, pass, dir * k * 360);
+        } else {
+            if (pass == 1)
+                for (int i = 1; i <= 3; i++)
+                    DrawCircleV(Vector2Subtract(pl.pos, Vector2Scale(pl.rollDir, i * 9.0f)), pl.r * 0.9f, Fade(cloak, 0.22f * (4 - i)));
+            float squash = 0.75f + 0.25f * fabsf(cosf(k * PI * 2));
+            float rx = pl.r * (2 - squash) * 1.1f, ry = pl.r * squash * 1.1f;
+            if (pass == 0) DrawEllipse((int)pl.pos.x, (int)pl.pos.y, rx + OL, ry + OL, OUTLINE);
+            else DrawEllipse((int)pl.pos.x, (int)pl.pos.y, rx, ry, cloak);
         }
         return;
     }
@@ -545,16 +614,13 @@ void Game::drawPlayer(int pass) {
         // 16x24 frames; walk cycle: step A, idle, step B, idle at 8 frames a second
         static const int CYCLE[4] = {1, 0, 2, 0};
         int frame = pl.moving ? CYCLE[(int)(pl.walkT * 8) % 4] : 0;
-        bool flip = facing == 2 && c < 0;
-        Rectangle src{frame * 16.0f, facing * 24.0f, flip ? -16.0f : 16.0f, 24.0f};
-        float x = roundf(pl.pos.x / PX) * PX - 8 * PX, y = roundf(feet / PX) * PX - 24 * PX;
-        if (pass == 0) {
-            const Vector2 offs[4] = {{-OL, 0}, {OL, 0}, {0, -OL}, {0, OL}};
-            for (Vector2 o : offs)
-                DrawTexturePro(playerSprite, src, {x + o.x, y + o.y, 16 * PX, 24 * PX}, {0, 0}, 0, OUTLINE);
-        } else {
-            DrawTexturePro(playerSprite, src, {x, y, 16 * PX, 24 * PX}, {0, 0}, 0, WHITE);
-        }
+        float fw = facing == 2 && c < 0 ? -16.0f : 16.0f;
+        // The legs (bottom 4 rows) stay planted. The body above them sinks one pixel
+        // when he breathes out, and leans back one pixel when the gun kicks.
+        float breathe = !pl.moving && fmodf(titleT, 1.3f) > 0.65f ? PX : 0.0f;
+        float flinch = pl.recoil > 0.5f ? -roundf(c) * PX : 0.0f;
+        drawSprite(playerSprite, {frame * 16.0f, facing * 24.0f + 20, fw, 4}, {pl.pos.x, feet - 2 * PX}, SW, 4 * PX, WHITE, pass);
+        drawSprite(playerSprite, {frame * 16.0f, facing * 24.0f, fw, 20}, {pl.pos.x + flinch, feet - 14 * PX + breathe}, SW, 20 * PX, WHITE, pass);
     } else {
         // Fallback when the sprite file is missing: the shape-drawn hooded gunner
         oCircle({pl.pos.x, pl.pos.y + 1}, pl.r * 1.05f, cloak, pass);
@@ -584,6 +650,58 @@ void Game::drawPlayer(int pass) {
     }
 }
 
+// ============================================================ debris and props
+// Debris lies flat on the floor, under every actor
+void Game::drawDebris() {
+    for (const Debris& d : debris) {
+        if (fabsf(d.pos.x - cam.target.x) > 700 || fabsf(d.pos.y - cam.target.y) > 450) continue;
+        float x = roundf(d.pos.x / PX) * PX, y = roundf((d.pos.y - d.z) / PX) * PX;
+        switch (d.kind) {
+            case DebrisKind::Stain:
+                DrawEllipse((int)d.pos.x, (int)d.pos.y, 6 * PX, 3 * PX, Fade(BLACK, 0.3f));
+                DrawEllipse((int)d.pos.x, (int)d.pos.y, 3.5f * PX, 1.5f * PX, Fade(BLACK, 0.3f));
+                break;
+            case DebrisKind::Casing:
+                DrawRectangleRec({x - PX, y, 2 * PX, PX}, d.col);
+                DrawRectangleRec({x - PX, y, PX, PX}, mix(d.col, WHITE, 0.35f));
+                break;
+            case DebrisKind::Shard:
+                DrawRectangleRec({x - PX, y - PX, 2 * PX, 2 * PX}, d.col);
+                DrawRectangleRec({x - PX, y, 2 * PX, PX}, mix(d.col, BLACK, 0.3f));
+                break;
+            case DebrisKind::Bit:
+                DrawRectangleRec({x, y, PX, PX}, d.col);
+                break;
+        }
+    }
+}
+
+void Game::drawProp(const Prop& p, int pass) {
+    float x = roundf(p.pos.x / PX) * PX, y = roundf(p.pos.y / PX) * PX;   // y = where it stands
+    if (pass == 1) shadow({x, y - PX}, 4.5f * PX);
+    if (p.kind == PropKind::Pot) {
+        const Color clay{176, 112, 78, 255};
+        oRect({x - 4 * PX, y - 7 * PX, 8 * PX, 6 * PX}, clay, pass);          // belly
+        oRect({x - 3 * PX, y - 8 * PX, 6 * PX, 8 * PX}, clay, pass);
+        oRect({x - 2 * PX, y - 10 * PX, 4 * PX, 2 * PX}, mix(clay, BLACK, 0.2f), pass);   // neck
+        oRect({x - 3 * PX, y - 11 * PX, 6 * PX, PX}, mix(clay, WHITE, 0.15f), pass);      // rim
+        if (pass == 1) {
+            DrawRectangleRec({x - 3 * PX, y - 6 * PX, PX, 3 * PX}, mix(clay, WHITE, 0.35f));
+            DrawRectangleRec({x - 4 * PX, y - 4 * PX, 8 * PX, PX}, mix(clay, BLACK, 0.35f));   // painted band
+            DrawRectangleRec({x + 2 * PX, y - 7 * PX, 2 * PX, 6 * PX}, mix(clay, BLACK, 0.2f));
+        }
+    } else {
+        const Color wood{140, 96, 58, 255}, dark = mix(wood, BLACK, 0.4f);
+        oRect({x - 5 * PX, y - 10 * PX, 10 * PX, 10 * PX}, wood, pass);
+        if (pass == 1) {
+            DrawRectangleLinesEx({x - 5 * PX, y - 10 * PX, 10 * PX, 10 * PX}, PX, dark);
+            DrawRectangleRec({x - 4 * PX, y - 6 * PX, 8 * PX, PX}, dark);
+            DrawRectangleRec({x - 4 * PX, y - 9 * PX, 8 * PX, PX}, mix(wood, WHITE, 0.25f));
+            DrawRectangleRec({x - PX, y - 9 * PX, PX, 8 * PX}, dark);
+        }
+    }
+}
+
 // ============================================================ lighting
 void Game::drawLights(const Camera2D& view) {
     const Theme& th = theme();
@@ -599,7 +717,7 @@ void Game::drawLights(const Camera2D& view) {
     BeginMode2D(view);
     BeginBlendMode(BLEND_ADDITIVE);
 
-    if (state != State::Dead) light(pl.pos, 280, {255, 236, 205, 255}, 0.5f);
+    light(pl.pos, 280, {255, 236, 205, 255}, state == State::Dead ? 0.3f : 0.5f);
     Color flame = mix(th.accent, {255, 150, 60, 255}, 0.35f);
     for (size_t i = 0; i < braziers.size(); i++) {
         float flick = 1.0f + 0.07f * sinf(titleT * 11 + i * 1.7f) + 0.04f * sinf(titleT * 23 + i);

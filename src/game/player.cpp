@@ -119,6 +119,8 @@ void Game::fire() {
     muzzleT = 0.07f;
     muzzlePos = muzzle;
     muzzleCol = d.color;
+    spawnCasing();
+    cam.target = Vector2Subtract(cam.target, fromAngle(pl.aim, 3.0f + d.shake * 40.0f));   // camera kick
     switch (d.sound) {
         case GunSound::Shotgun: sShotgun.play(frand(0.9f, 1.1f), d.volume); break;
         case GunSound::Rail:    sRail.play(frand(0.95f, 1.05f), d.volume); break;
