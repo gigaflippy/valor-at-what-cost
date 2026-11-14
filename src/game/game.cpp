@@ -55,6 +55,7 @@ void Game::buildFloor() {
     enemies.clear();
     parts.clear();
     pickups.clear();
+    debris.clear();
     hatchActive = false;
     waveDelay = 0;
     pl.pos = dun.roomCenter(0);
@@ -64,6 +65,9 @@ void Game::buildFloor() {
     dun.rooms[0].visited = true;
     cam.target = pl.pos;
     placeBraziers();
+    placeProps();
+    fadeT = 1.0f;
+    hitStop = 0;
     showBanner(TextFormat("FLOOR %d  -  %s", floor, theme().name.c_str()), 3.0f);
 }
 
@@ -98,6 +102,8 @@ void Game::update(float dt) {
     }
 
     if (debug) debugKeys();
+    fadeT = std::max(0.0f, fadeT - dt * 2.0f);
+    if (hitStop > 0) { hitStop -= dt; return; }
     runTime += dt;
     muzzleT = std::max(0.0f, muzzleT - dt);
     emitEmbers(dt);
@@ -109,6 +115,7 @@ void Game::update(float dt) {
     updateBullets(dt);
     updatePickups(dt);
     updateParticles(dt);
+    updateFeel(dt);
 
     enemies.erase(std::remove_if(enemies.begin(), enemies.end(), [](const Enemy& e) { return !e.alive; }), enemies.end());
     pickups.erase(std::remove_if(pickups.begin(), pickups.end(), [](const Pickup& p) { return !p.alive; }), pickups.end());

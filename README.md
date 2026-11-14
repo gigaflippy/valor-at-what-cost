@@ -99,7 +99,7 @@ All game content lives in plain JSON files, so balancing or adding content needs
 | `data/enemies.json` | Every enemy: behaviour (`shooter`, `spinner`, `warden`), shape, stats, attacks, spawn chances |
 | `data/floors.json` | Floor names and colour palettes; the number of entries is the number of floors |
 | `data/rules.json` | Player stats, difficulty scaling, wave sizes, drop chances |
-| `data/sprites/` | Sprite sheets. `deserter.png` is generated from the pixel grids in `tools/sprites/deserter.py` |
+| `data/sprites/` | Sprite sheets, generated from the pixel grids in `tools/sprites/`: `deserter.png` (the player) and `enemies.png` (grey bodies that the game tints with each enemy's colour) |
 
 Each file starts with a `_comment` explaining its fields. Run with `--debug`, edit a file, press **F5** and the change applies instantly. A typo shows an error naming the exact file and field. Set the `VALOR_DATA` environment variable to load a different data folder.
 
@@ -119,6 +119,7 @@ Each file starts with a `_comment` explaining its fields. Run with `--debug`, ed
 | `src/game/rooms.cpp` | Door locking, wave spawning, room rewards |
 | `src/game/enemies.cpp` | Enemy AI, the Warden's bullet patterns, damage |
 | `src/game/combat.cpp` | Bullets, pickups and particles each frame |
+| `src/game/feel.cpp` | Debris that stays on the floor (casings, remains, shards) and breakable props |
 | `src/game/render.cpp` | Pixel canvas, three-quarter walls, depth sorting, outlines, lighting |
 | `src/game/hud.cpp` | HUD, minimap, menus |
 

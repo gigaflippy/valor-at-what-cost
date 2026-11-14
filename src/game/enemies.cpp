@@ -173,6 +173,8 @@ void Game::damageEnemy(Enemy& e, float dmg, Vector2 vel) {
 
     e.alive = false;
     kills++;
+    spawnRemains(e);
+    hitStop = e.type == EType::Warden ? 0.22f : 0.035f;
     if (e.type == EType::Warden) {
         burst(e.pos, 120, theme().accent, 80, 520, 1.2f, 7);
         burst(e.pos, 60, WHITE, 40, 300, 0.8f, 4);
@@ -193,6 +195,7 @@ void Game::hurtPlayer() {
     pl.hp--;
     pl.invuln = content().rules.hitInvuln;
     hurtFlash = 1.0f;
+    hitStop = 0.08f;
     shake += 0.5f;
     sHurt.play();
     burst(pl.pos, 25, {255, 70, 70, 255}, 60, 260, 0.5f, 5);

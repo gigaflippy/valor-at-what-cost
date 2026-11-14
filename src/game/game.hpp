@@ -38,6 +38,8 @@ struct Game {
     std::vector<Enemy>    enemies;
     std::vector<Particle> parts;
     std::vector<Pickup>   pickups;
+    std::vector<Debris>   debris;
+    std::vector<Prop>     props;
 
     // presentation
     Camera2D cam{};                 // target = world point at the centre of the screen
@@ -45,6 +47,7 @@ struct Game {
     // pixel-art renderer (render.cpp)
     RenderTexture2D canvas{}, lightMap{};
     Texture2D lightTex{};
+    Texture2D enemySprite{};         // data/sprites/enemies.png; id 0 = not found, shapes are drawn instead
     Texture2D playerSprite{};        // data/sprites/deserter.png; id 0 = not found, shapes are drawn instead
     bool gfxReady = false;
     float pixelScale = 1;            // screen pixels per canvas pixel
@@ -54,6 +57,8 @@ struct Game {
     Vector2 muzzlePos{};
     Color muzzleCol = WHITE;
     float shake = 0, hurtFlash = 0, blankR = -1, eShotSfxT = 0;
+    float hitStop = 0;               // the simulation freezes for this long: makes hits land
+    float fadeT = 0;                 // 1 = black, fades to 0 at the start of a floor
     Vector2 blankPos{};
     std::string banner;
     float bannerT = 0;
@@ -140,6 +145,14 @@ struct Game {
 
     void updateParticles(float dt);
 
+    // ------------------------------------------------------------ game feel (feel.cpp)
+    void addDebris(Vector2 pos, Vector2 vel, float z, float vz, Color col, DebrisKind kind);
+    void spawnCasing();
+    void spawnRemains(const Enemy& e);
+    void placeProps();
+    void breakProp(Prop& p);
+    void updateFeel(float dt);
+
     // ============================================================ DRAWING
     Color enemyColor(const Enemy& e) const;
     static Color pickupColor(PickType t);
@@ -159,6 +172,8 @@ struct Game {
     void drawLights(const Camera2D& view);
     void drawEmissive();
     void drawPrompts();
+    void drawDebris();
+    void drawProp(const Prop& p, int pass);
 
 
     void drawPickup(const Pickup& p, int pass);
@@ -171,7 +186,7 @@ struct Game {
     void drawBullets();
 
     // ------------------------------------------------------------ HUD
-    void drawHeart(float cx, float cy, float s, int fill);
+    void drawHeart(float cx, float cy, float px, int fill);
 
     void drawHUD();
 
